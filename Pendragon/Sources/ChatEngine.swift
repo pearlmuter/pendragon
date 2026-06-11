@@ -155,6 +155,10 @@ class ChatEngine: ObservableObject {
     private var recordingTimer: Timer?
     private var targetSampleRate: Float = 16000
     private var chatStoreCancellable: AnyCancellable?
+    private var dockDotCancellable: AnyCancellable?
+
+    /// Set by PendragonApp so the dock-dot can wait for TTS to finish.
+    weak var ttsEngine: TTSEngine?
 
     init() {
         let paths = Self.findModelPaths()
@@ -732,7 +736,7 @@ class ChatEngine: ObservableObject {
                 }
 
                 if !NSApp.isActive {
-                    Self.setDockDot(true)
+                    self.showDockDotAfterTTS()
                 }
                 self.saveCurrentThread()
                 self.generatingThreadId = nil
@@ -1195,6 +1199,24 @@ class ChatEngine: ObservableObject {
         }
         prompt += "<|turn>model\n"
         return prompt
+    }
+
+    /// Shows the dock dot immediately if TTS is idle, or waits until synthesis
+    /// drains before showing it — so the dot appears only when the reply is fully ready.
+    private func showDockDotAfterTTS() {
+        guard let tts = ttsEngine, !tts.synthesizingIds.isEmpty else {
+            Self.setDockDot(true)
+            return
+        }
+        dockDotCancellable = tts.$synthesizingIds
+            .filter { $0.isEmpty }
+            .first()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard !NSApp.isActive else { return }
+                Self.setDockDot(true)
+                self?.dockDotCancellable = nil
+            }
     }
 
     /// Draws a small red notification dot on the dock icon (half the size of the

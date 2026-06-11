@@ -1,7 +1,6 @@
 import Foundation
 import AVFoundation
 import Combine
-import KokoroKit
 
 // MARK: - TTSEngine
 
@@ -25,12 +24,20 @@ class TTSEngine: NSObject, ObservableObject {
         didSet { UserDefaults.standard.set(speechSpeed, forKey: "tts.speechSpeed") }
     }
 
-    @Published var selectedModel: TTSModelVariant {
+    @Published var qwen3Model: Qwen3Model {
         didSet {
-            guard oldValue != selectedModel else { return }
-            UserDefaults.standard.set(selectedModel.rawValue, forKey: "tts.model")
-            bridge.loadModel(variant: selectedModel)
+            guard oldValue != qwen3Model else { return }
+            UserDefaults.standard.set(qwen3Model.rawValue, forKey: "tts.qwen3Model")
+            bridge.loadModel(model: qwen3Model)
         }
+    }
+
+    @Published var voiceDesignPrompt: String {
+        didSet { UserDefaults.standard.set(voiceDesignPrompt, forKey: "tts.voiceDesignPrompt") }
+    }
+
+    @Published var emotionInstruct: String {
+        didSet { UserDefaults.standard.set(emotionInstruct, forKey: "tts.emotionInstruct") }
     }
 
     /// Message IDs currently queued or being synthesised.
@@ -50,7 +57,7 @@ class TTSEngine: NSObject, ObservableObject {
 
     // MARK: - Private
 
-    private let bridge = KokoroBridge()
+    private let bridge = Qwen3TTSBridge()
     private var bridgeCancellables = Set<AnyCancellable>()
 
     // Serial synthesis queue — kokoro_synthesize is NOT thread-safe.
@@ -84,13 +91,17 @@ class TTSEngine: NSObject, ObservableObject {
     // MARK: - Init
 
     override init() {
-        let voice    = UserDefaults.standard.string(forKey: "tts.selectedVoice") ?? KokoroBridge.defaultVoice
-        let speed    = UserDefaults.standard.float(forKey: "tts.speechSpeed")
-        let modelRaw = UserDefaults.standard.string(forKey: "tts.model") ?? ""
-        selectedVoice  = voice
-        speechSpeed    = speed > 0 ? speed : 1.0
-        selectedModel  = TTSModelVariant(rawValue: modelRaw) ?? .fp32
-        autoSpeak      = UserDefaults.standard.bool(forKey: "tts.autoSpeak")
+        let voice       = UserDefaults.standard.string(forKey: "tts.selectedVoice") ?? Qwen3TTSBridge.defaultVoice
+        let speed       = UserDefaults.standard.float(forKey: "tts.speechSpeed")
+        let modelRaw    = UserDefaults.standard.string(forKey: "tts.qwen3Model") ?? ""
+        let designPrompt = UserDefaults.standard.string(forKey: "tts.voiceDesignPrompt") ?? ""
+        let emotion     = UserDefaults.standard.string(forKey: "tts.emotionInstruct") ?? ""
+        selectedVoice       = voice
+        speechSpeed         = speed > 0 ? speed : 1.0
+        qwen3Model          = Qwen3Model(rawValue: modelRaw) ?? .customVoice
+        voiceDesignPrompt   = designPrompt
+        emotionInstruct     = emotion
+        autoSpeak           = UserDefaults.standard.bool(forKey: "tts.autoSpeak")
         super.init()
 
         // Remove orphaned files from any previous crash
@@ -115,12 +126,12 @@ class TTSEngine: NSObject, ObservableObject {
             .store(in: &bridgeCancellables)
 
         // Start loading immediately so the model is ready as early as possible
-        bridge.loadModel(variant: selectedModel)
+        bridge.loadModel(model: qwen3Model)
     }
 
     // MARK: - Lifecycle
 
-    func start() { bridge.loadModel(variant: selectedModel) }
+    func start() { bridge.loadModel(model: qwen3Model) }
 
     func shutdown() {
         bridge.stopSpeaking()
@@ -158,12 +169,17 @@ class TTSEngine: NSObject, ObservableObject {
             if !pendingUntilReady.contains(where: { $0.id == messageId }) {
                 pendingUntilReady.append(item)
             }
-            if !bridge.isLoading { bridge.loadModel(variant: selectedModel) }
+            if !bridge.isLoading { bridge.loadModel(model: qwen3Model) }
         }
     }
 
-    func speak(text: String, voice: String? = nil, speed: Float? = nil) {
-        bridge.speak(text: text, voice: voice ?? selectedVoice, speed: speed ?? speechSpeed)
+    func speak(text: String) {
+        let voice    = qwen3Model == .voiceDesign ? Qwen3TTSBridge.defaultVoice : selectedVoice
+        let instruct = qwen3Model == .voiceDesign
+            ? (voiceDesignPrompt.isEmpty ? nil : voiceDesignPrompt)
+            : (emotionInstruct.isEmpty   ? nil : emotionInstruct)
+        bridge.speak(text: text, voice: voice, instruct: instruct,
+                     model: qwen3Model, speed: speechSpeed)
     }
 
     func stopSpeaking() {
@@ -194,7 +210,7 @@ class TTSEngine: NSObject, ObservableObject {
         let stem = safe.isEmpty ? "Pendragon Audio" : String(safe.prefix(60))
 
         let wavOut = downloads.appendingPathComponent("\(stem).wav")
-        return await KokoroBridge.exportAudio(from: wavURL, to: wavOut)
+        return await Qwen3TTSBridge.exportAudio(from: wavURL, to: wavOut)
     }
 
     var availableVoices: [String] { bridge.availableVoices }
@@ -220,7 +236,7 @@ class TTSEngine: NSObject, ObservableObject {
         } else {
             // Wait for the model; it's already marked in synthesizingIds
             pendingUntilReady.append(item)
-            if !bridge.isLoading { bridge.loadModel(variant: selectedModel) }
+            if !bridge.isLoading { bridge.loadModel(model: qwen3Model) }
         }
     }
 
@@ -249,12 +265,17 @@ class TTSEngine: NSObject, ObservableObject {
         synthQueue.removeFirst()
         synthBusy = true
 
-        let voice = selectedVoice
+        let voice    = qwen3Model == .voiceDesign ? Qwen3TTSBridge.defaultVoice : selectedVoice
+        let instruct = qwen3Model == .voiceDesign
+            ? (voiceDesignPrompt.isEmpty ? nil : voiceDesignPrompt)
+            : (emotionInstruct.isEmpty   ? nil : emotionInstruct)
+        let model = qwen3Model
         let speed = speechSpeed
         let url   = cacheURL(for: item.id)
 
         Task { @MainActor in
-            let data = await bridge.synthesizeToData(text: item.text, voice: voice, speed: speed)
+            let data = await bridge.synthesizeToData(text: item.text, voice: voice,
+                                                     instruct: instruct, model: model, speed: speed)
 
             self.synthBusy = false
             self.synthesizingIds.remove(item.id)

@@ -1,151 +1,5 @@
 import SwiftUI
 
-// MARK: - Voice Catalogue
-
-struct VoiceInfo: Identifiable, Equatable {
-    let id: String           // Kokoro voice ID, e.g. "af_heart"
-    let displayName: String  // Human-readable name
-    let gender: Gender
-    let accent: Accent
-    let grade: Grade
-    let description: String
-    let traits: [String]
-
-    enum Gender: String { case female, male
-        var symbol: String { self == .female ? "♀" : "♂" }
-        var color: Color    { self == .female ? .pink.opacity(0.85) : .blue.opacity(0.85) }
-    }
-
-    enum Accent: String, CaseIterable {
-        case american = "American English"
-        case british  = "British English"
-        var flag: String  { self == .american ? "🇺🇸" : "🇬🇧" }
-        var short: String { self == .american ? "AmE" : "BrE" }
-        var espeakLang: String { self == .american ? "en-us" : "en-gb" }
-    }
-
-    struct Grade: Equatable {
-        let label: String  // e.g. "A", "B+", "C−"
-        let tier: Int      // 0=A family, 1=B family, 2=C family, 3=D
-        var color: Color {
-            switch tier {
-            case 0: return Color(red: 0.30, green: 0.85, blue: 0.45)
-            case 1: return Color(red: 0.70, green: 0.90, blue: 0.20)
-            case 2: return .orange
-            default: return .secondary
-            }
-        }
-        static func gradeOf(_ s: String) -> Grade {
-            let tier: Int
-            switch s.first {
-            case "A": tier = 0
-            case "B": tier = 1
-            case "C": tier = 2
-            default:  tier = 3
-            }
-            return Grade(label: s, tier: tier)
-        }
-    }
-
-    static func == (lhs: VoiceInfo, rhs: VoiceInfo) -> Bool { lhs.id == rhs.id }
-}
-
-// MARK: - Kokoro v1.0 voice catalogue
-// Grades and descriptions are based on the Kokoro model card and community evaluation.
-// Language support: all voices are English-only (American or British RP).
-// The espeak-ng phonemiser is used for text normalisation; it supports only en-us / en-gb.
-
-let kokoroVoiceCatalogue: [VoiceInfo] = [
-    // ── American English · Female ──────────────────────────────────────────
-    .init(id: "af_heart",    displayName: "Heart",    gender: .female, accent: .american,
-          grade: .gradeOf("A"),   description: "Warm, expressive, and natural. Top-rated overall.",
-          traits: ["Warm", "Expressive"]),
-    .init(id: "af_bella",    displayName: "Bella",    gender: .female, accent: .american,
-          grade: .gradeOf("A−"),  description: "Smooth and polished. Ideal for longer reads.",
-          traits: ["Smooth", "Polished"]),
-    .init(id: "af_aoede",    displayName: "Aoede",    gender: .female, accent: .american,
-          grade: .gradeOf("B+"),  description: "Bright and articulate. Slightly upbeat.",
-          traits: ["Bright", "Clear"]),
-    .init(id: "af_kore",     displayName: "Kore",     gender: .female, accent: .american,
-          grade: .gradeOf("B+"),  description: "Neutral, versatile all-rounder.",
-          traits: ["Neutral", "Versatile"]),
-    .init(id: "af_sarah",    displayName: "Sarah",    gender: .female, accent: .american,
-          grade: .gradeOf("B+"),  description: "Natural pacing with a pleasant tone.",
-          traits: ["Pleasant"]),
-    .init(id: "af_nicole",   displayName: "Nicole",   gender: .female, accent: .american,
-          grade: .gradeOf("B"),   description: "Clear and friendly.",
-          traits: ["Friendly"]),
-    .init(id: "af_sky",      displayName: "Sky",      gender: .female, accent: .american,
-          grade: .gradeOf("B"),   description: "Light, clear, good intelligibility.",
-          traits: ["Light"]),
-    .init(id: "af_nova",     displayName: "Nova",     gender: .female, accent: .american,
-          grade: .gradeOf("C+"),  description: "Energetic cadence, faster natural pace.",
-          traits: ["Energetic"]),
-    .init(id: "af_alloy",    displayName: "Alloy",    gender: .female, accent: .american,
-          grade: .gradeOf("C"),   description: "Neutral. Adequate quality.",
-          traits: []),
-    .init(id: "af_river",    displayName: "River",    gender: .female, accent: .american,
-          grade: .gradeOf("C−"),  description: "Calm, flowing delivery.",
-          traits: ["Calm"]),
-    .init(id: "af_jessica",  displayName: "Jessica",  gender: .female, accent: .american,
-          grade: .gradeOf("D"),   description: "Experimental. Quality may vary.",
-          traits: ["Experimental"]),
-    // ── American English · Male ────────────────────────────────────────────
-    .init(id: "am_michael",  displayName: "Michael",  gender: .male, accent: .american,
-          grade: .gradeOf("A"),   description: "Deep, authoritative, and clear. Best American male.",
-          traits: ["Deep", "Authoritative"]),
-    .init(id: "am_fenrir",   displayName: "Fenrir",   gender: .male, accent: .american,
-          grade: .gradeOf("B+"),  description: "Strong and confident. Slightly dramatic.",
-          traits: ["Strong"]),
-    .init(id: "am_puck",     displayName: "Puck",     gender: .male, accent: .american,
-          grade: .gradeOf("B+"),  description: "Lively and engaging. Great for storytelling.",
-          traits: ["Lively"]),
-    .init(id: "am_eric",     displayName: "Eric",     gender: .male, accent: .american,
-          grade: .gradeOf("B+"),  description: "Warm baritone with natural rhythm.",
-          traits: ["Warm", "Baritone"]),
-    .init(id: "am_liam",     displayName: "Liam",     gender: .male, accent: .american,
-          grade: .gradeOf("B"),   description: "Youthful and friendly.",
-          traits: ["Youthful"]),
-    .init(id: "am_echo",     displayName: "Echo",     gender: .male, accent: .american,
-          grade: .gradeOf("C+"),  description: "Clean, neutral delivery.",
-          traits: ["Clean"]),
-    .init(id: "am_onyx",     displayName: "Onyx",     gender: .male, accent: .american,
-          grade: .gradeOf("C"),   description: "Dark, resonant tone.",
-          traits: ["Resonant"]),
-    .init(id: "am_adam",     displayName: "Adam",     gender: .male, accent: .american,
-          grade: .gradeOf("C−"),  description: "Straightforward delivery.",
-          traits: []),
-    .init(id: "am_santa",    displayName: "Santa",    gender: .male, accent: .american,
-          grade: .gradeOf("D"),   description: "Jolly, festive character voice.",
-          traits: ["Festive"]),
-    // ── British English · Female ───────────────────────────────────────────
-    .init(id: "bf_emma",     displayName: "Emma",     gender: .female, accent: .british,
-          grade: .gradeOf("A"),   description: "Refined RP accent. Elegant and precise. Top BrE voice.",
-          traits: ["Elegant", "RP"]),
-    .init(id: "bf_isabella", displayName: "Isabella", gender: .female, accent: .british,
-          grade: .gradeOf("B+"),  description: "Warm British tone with clear articulation.",
-          traits: ["Warm", "Clear"]),
-    .init(id: "bf_alice",    displayName: "Alice",    gender: .female, accent: .british,
-          grade: .gradeOf("B"),   description: "Bright and cheerful. Slightly informal.",
-          traits: ["Bright", "Cheerful"]),
-    .init(id: "bf_lily",     displayName: "Lily",     gender: .female, accent: .british,
-          grade: .gradeOf("C+"),  description: "Gentle and soft-spoken.",
-          traits: ["Gentle"]),
-    // ── British English · Male ─────────────────────────────────────────────
-    .init(id: "bm_george",   displayName: "George",   gender: .male, accent: .british,
-          grade: .gradeOf("A+"),  description: "Classic RP. Deep, measured. Perfect for formal content.",
-          traits: ["Classic", "Formal"]),
-    .init(id: "bm_fable",    displayName: "Fable",    gender: .male, accent: .british,
-          grade: .gradeOf("A"),   description: "Rich, narrative quality. Ideal for storytelling.",
-          traits: ["Rich", "Narrative"]),
-    .init(id: "bm_lewis",    displayName: "Lewis",    gender: .male, accent: .british,
-          grade: .gradeOf("B+"),  description: "Conversational and natural.",
-          traits: ["Conversational"]),
-    .init(id: "bm_daniel",   displayName: "Daniel",   gender: .male, accent: .british,
-          grade: .gradeOf("B"),   description: "Pleasant British character.",
-          traits: ["Pleasant"]),
-]
-
 // MARK: - Settings Panel
 
 struct SettingsView: View {
@@ -172,8 +26,7 @@ struct SettingsView: View {
         HStack(spacing: 0) {
             sidebarPanel
             Divider()
-            detailPanel
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            detailPanel.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Theme.background)
     }
@@ -182,7 +35,6 @@ struct SettingsView: View {
 
     private var sidebarPanel: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
             HStack(spacing: 10) {
                 Button(action: { isPresented = false }) {
                     Image(systemName: "xmark")
@@ -193,7 +45,6 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.borderless)
                 .help("Close Settings")
-
                 Text("Settings")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Theme.textPrimary)
@@ -206,11 +57,8 @@ struct SettingsView: View {
 
             VStack(spacing: 2) {
                 ForEach(Section.allCases, id: \.self) { section in
-                    SidebarRow(
-                        icon: section.icon,
-                        label: section.rawValue,
-                        isSelected: selectedSection == section
-                    ) { selectedSection = section }
+                    SidebarRow(icon: section.icon, label: section.rawValue,
+                               isSelected: selectedSection == section) { selectedSection = section }
                 }
             }
             .padding(.horizontal, 8)
@@ -221,8 +69,6 @@ struct SettingsView: View {
         .frame(width: 175)
         .background(Theme.sidebar)
     }
-
-    // MARK: - Detail router
 
     @ViewBuilder
     private var detailPanel: some View {
@@ -259,8 +105,7 @@ private struct SidebarRow: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 7)
-                    .fill(isSelected
-                          ? Color.accentColor.opacity(0.18)
+                    .fill(isSelected ? Color.accentColor.opacity(0.18)
                           : isHovering ? Theme.surfaceHover : Color.clear)
             )
         }
@@ -273,113 +118,230 @@ private struct SidebarRow: View {
 
 private struct VoiceSection: View {
     @ObservedObject var ttsEngine: TTSEngine
-    @State private var accentFilter: VoiceInfo.Accent? = nil
-    @State private var genderFilter: VoiceInfo.Gender? = nil
     @State private var isPreviewing = false
-
-    private var availableIDs: Set<String> {
-        Set(ttsEngine.availableVoices)
-    }
-
-    private var filtered: [VoiceInfo] {
-        kokoroVoiceCatalogue.filter { v in
-            let accentOK = accentFilter == nil || v.accent == accentFilter
-            let genderOK = genderFilter == nil || v.gender == genderFilter
-            return accentOK && genderOK
-        }
-    }
-
-    private var groupedByAccent: [(VoiceInfo.Accent, [VoiceInfo])] {
-        let accents: [VoiceInfo.Accent] = accentFilter.map { [$0] } ?? VoiceInfo.Accent.allCases
-        return accents.compactMap { accent in
-            let voices = filtered.filter { $0.accent == accent }
-            return voices.isEmpty ? nil : (accent, voices)
-        }
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // ── Engine status bar ─────────────────────────────────────────
+            engineStatusBar
+            Divider().opacity(0.4)
+
             // ── Model picker ──────────────────────────────────────────────
-            ModelPicker(ttsEngine: ttsEngine)
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 16)
-
+            modelPicker
             Divider().opacity(0.4)
 
-            // ── Voice header + filter chips ───────────────────────────────
-            HStack(spacing: 8) {
-                Text("Voice")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
-                Spacer()
-                // Filter chips
-                FilterChip(label: "🇺🇸", isOn: accentFilter == .american) {
-                    accentFilter = accentFilter == .american ? nil : .american
-                }
-                FilterChip(label: "🇬🇧", isOn: accentFilter == .british) {
-                    accentFilter = accentFilter == .british ? nil : .british
-                }
-                FilterChip(label: "♀", isOn: genderFilter == .female) {
-                    genderFilter = genderFilter == .female ? nil : .female
-                }
-                FilterChip(label: "♂", isOn: genderFilter == .male) {
-                    genderFilter = genderFilter == .male ? nil : .male
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-
-            Divider().opacity(0.4)
-
-            // Voice list
+            // ── Model-specific content ────────────────────────────────────
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    ForEach(groupedByAccent, id: \.0) { accent, voices in
-                        VStack(alignment: .leading, spacing: 6) {
-                            // Accent header
-                            HStack(spacing: 6) {
-                                Text(accent.flag)
-                                    .font(.system(size: 14))
-                                Text(accent.rawValue)
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(Theme.textSecondary)
-                                Text("· \(accent.espeakLang)")
-                                    .font(.system(size: 10, design: .monospaced))
-                                    .foregroundColor(Theme.textSecondary.opacity(0.6))
-                            }
-                            .padding(.horizontal, 4)
-
-                            // Voice cards — 2-column adaptive grid
-                            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8),
-                                                GridItem(.flexible(), spacing: 8)],
-                                      spacing: 8) {
-                                ForEach(voices) { voice in
-                                    VoiceCard(
-                                        voice: voice,
-                                        isSelected: ttsEngine.selectedVoice == voice.id,
-                                        isAvailable: availableIDs.isEmpty || availableIDs.contains(voice.id)
-                                    ) {
-                                        ttsEngine.selectedVoice = voice.id
-                                    }
-                                }
-                            }
-                        }
+                    if ttsEngine.qwen3Model == .voiceDesign {
+                        voiceDesignEditor
+                    } else {
+                        speakerGrid
+                        emotionEditor
                     }
                 }
                 .padding(16)
             }
 
             Divider().opacity(0.4)
-
-            // Speed + Preview bar
             speedAndPreviewBar
         }
     }
 
+    // MARK: Engine status
+
+    private var engineStatusBar: some View {
+        HStack(spacing: 8) {
+            if ttsEngine.isStarting {
+                ProgressView().scaleEffect(0.6).frame(width: 14, height: 14)
+                Text("Loading TTS daemon…")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.textSecondary)
+            } else if let err = ttsEngine.startError {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.orange)
+                Text(err)
+                    .font(.system(size: 11))
+                    .foregroundColor(.orange)
+                    .lineLimit(2)
+            } else if ttsEngine.isReady {
+                Circle()
+                    .fill(Color.green)
+                    .frame(width: 7, height: 7)
+                Text("Qwen3-TTS ready")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.textSecondary)
+            } else {
+                Circle()
+                    .fill(Color.secondary.opacity(0.4))
+                    .frame(width: 7, height: 7)
+                Text("TTS not loaded")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.textSecondary)
+                Button("Load") { ttsEngine.start() }
+                    .buttonStyle(SmallButtonStyle(tint: .accentColor))
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Theme.surface.opacity(0.5))
+    }
+
+    // MARK: Model picker (Custom Voice / Voice Design)
+
+    private var modelPicker: some View {
+        HStack(spacing: 0) {
+            ForEach(Qwen3Model.allCases, id: \.self) { m in
+                modelTab(m)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+
+    private func modelTab(_ m: Qwen3Model) -> some View {
+        let selected = ttsEngine.qwen3Model == m
+        return Button(action: { ttsEngine.qwen3Model = m }) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(m.displayName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(selected ? .accentColor : Theme.textPrimary)
+                Text(m.subtitle)
+                    .font(.system(size: 10))
+                    .foregroundColor(Theme.textSecondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 9)
+                    .fill(selected ? Color.accentColor.opacity(0.13) : Theme.surface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 9)
+                    .stroke(selected ? Color.accentColor.opacity(0.5)
+                            : Color.secondary.opacity(0.12),
+                            lineWidth: selected ? 1.5 : 0.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .padding(.trailing, m == .customVoice ? 8 : 0)
+    }
+
+    // MARK: Voice Design editor
+
+    private var voiceDesignEditor: some View {
+        settingsGroup("Voice Description") {
+            Text("Describe the voice in plain language. The model interprets your description to shape timbre, pace, accent, age, and emotional colour.")
+                .font(.system(size: 11))
+                .foregroundColor(Theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .lineSpacing(2)
+                .padding(.bottom, 4)
+
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Theme.background)
+                    .overlay(RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 0.5))
+
+                if ttsEngine.voiceDesignPrompt.isEmpty {
+                    Text("e.g. A warm, deep baritone narrator — measured and unhurried, like a documentary filmmaker reading by firelight. Slightly gravelly.")
+                        .font(.system(size: 12))
+                        .foregroundColor(Theme.textSecondary.opacity(0.5))
+                        .padding(10)
+                        .allowsHitTesting(false)
+                }
+
+                TextEditor(text: $ttsEngine.voiceDesignPrompt)
+                    .font(.system(size: 12))
+                    .foregroundColor(Theme.textPrimary)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 80, maxHeight: 140)
+                    .padding(6)
+            }
+
+            InfoRow(icon: "info.circle",
+                    text: "Include emotion in the description itself — e.g. \"…currently speaking with suppressed urgency.\" The description is sent to the model as-is.")
+        }
+    }
+
+    // MARK: Speaker grid (Custom Voice)
+
+    private var speakerGrid: some View {
+        settingsGroup("Speaker") {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                      spacing: 8) {
+                ForEach(qwen3Voices, id: \.self) { name in
+                    speakerCard(name)
+                }
+            }
+        }
+    }
+
+    private func speakerCard(_ name: String) -> some View {
+        let selected = ttsEngine.selectedVoice == name
+        return Button(action: { ttsEngine.selectedVoice = name }) {
+            Text(name)
+                .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                .foregroundColor(selected ? .accentColor : Theme.textPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 9)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(selected ? Color.accentColor.opacity(0.13) : Theme.surface)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(selected ? Color.accentColor.opacity(0.5)
+                                : Color.secondary.opacity(0.12),
+                                lineWidth: selected ? 1.5 : 0.5)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Emotion / style instruct (Custom Voice only)
+
+    private var emotionEditor: some View {
+        settingsGroup("Emotion / Style") {
+            Text("Optional. Describe the delivery style or emotional tone for this session. Leave empty for natural neutral speech.")
+                .font(.system(size: 11))
+                .foregroundColor(Theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .lineSpacing(2)
+                .padding(.bottom, 4)
+
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Theme.background)
+                    .overlay(RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 0.5))
+
+                if ttsEngine.emotionInstruct.isEmpty {
+                    Text("e.g. Speak warmly, as if talking to an old friend. Unhurried and sincere.")
+                        .font(.system(size: 12))
+                        .foregroundColor(Theme.textSecondary.opacity(0.5))
+                        .padding(10)
+                        .allowsHitTesting(false)
+                }
+
+                TextEditor(text: $ttsEngine.emotionInstruct)
+                    .font(.system(size: 12))
+                    .foregroundColor(Theme.textPrimary)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 60, maxHeight: 100)
+                    .padding(6)
+            }
+        }
+    }
+
+    // MARK: Speed + Preview bar
+
     private var speedAndPreviewBar: some View {
         HStack(spacing: 16) {
-            // Speed label
             HStack(spacing: 6) {
                 Image(systemName: "speedometer")
                     .font(.system(size: 12))
@@ -389,7 +351,6 @@ private struct VoiceSection: View {
                     .foregroundColor(Theme.textSecondary)
             }
 
-            // Slider
             Slider(value: Binding(
                 get: { Double(ttsEngine.speechSpeed) },
                 set: { ttsEngine.speechSpeed = Float($0) }
@@ -397,7 +358,6 @@ private struct VoiceSection: View {
             .frame(maxWidth: 180)
             .tint(.accentColor)
 
-            // Speed value
             Text(String(format: "%.2g×", ttsEngine.speechSpeed))
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .foregroundColor(Theme.textSecondary)
@@ -405,14 +365,12 @@ private struct VoiceSection: View {
 
             Spacer()
 
-            // Reset speed
             Button("Reset") {
                 withAnimation(.spring(duration: 0.2)) { ttsEngine.speechSpeed = 1.0 }
             }
             .buttonStyle(SmallButtonStyle())
             .opacity(abs(ttsEngine.speechSpeed - 1.0) > 0.01 ? 1 : 0)
 
-            // Preview button
             Button(action: previewVoice) {
                 HStack(spacing: 5) {
                     if isPreviewing {
@@ -426,7 +384,6 @@ private struct VoiceSection: View {
                 }
             }
             .buttonStyle(SmallButtonStyle(tint: ttsEngine.isSpeaking ? .red.opacity(0.7) : .accentColor))
-            .disabled(isPreviewing && !ttsEngine.isReady)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
@@ -434,285 +391,18 @@ private struct VoiceSection: View {
     }
 
     private func previewVoice() {
-        if ttsEngine.isSpeaking { ttsEngine.stopSpeaking(); return }
-        guard ttsEngine.isReady else {
-            isPreviewing = true
-            ttsEngine.start()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { previewVoice() }
-            return
+        if ttsEngine.isSpeaking { ttsEngine.stopSpeaking(); isPreviewing = false; return }
+        isPreviewing = true
+        let sampleText: String
+        switch ttsEngine.qwen3Model {
+        case .voiceDesign:
+            sampleText = "Hello. This is a preview of your designed voice."
+        case .customVoice:
+            sampleText = "Hello, I'm \(ttsEngine.selectedVoice). This is how I sound."
         }
-        isPreviewing = false
-        let voiceName = kokoroVoiceCatalogue.first(where: { $0.id == ttsEngine.selectedVoice })?.displayName
-                        ?? ttsEngine.selectedVoice
-        ttsEngine.speak(text: "Hello, I'm \(voiceName). This is how I sound.")
-    }
-}
-
-// MARK: - Model Picker
-
-private struct ModelPicker: View {
-    @ObservedObject var ttsEngine: TTSEngine
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Text("Model")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
-                if ttsEngine.isStarting {
-                    ProgressView().scaleEffect(0.55).frame(width: 14, height: 14)
-                    Text("Loading…")
-                        .font(.system(size: 10))
-                        .foregroundColor(Theme.textSecondary)
-                }
-            }
-
-            HStack(spacing: 8) {
-                ForEach(TTSModelVariant.allCases, id: \.self) { variant in
-                    ModelCard(
-                        variant: variant,
-                        isSelected: ttsEngine.selectedModel == variant,
-                        isLoading: ttsEngine.isStarting && ttsEngine.selectedModel == variant
-                    ) {
-                        ttsEngine.selectedModel = variant
-                    }
-                }
-            }
-
-            // Reload notice — shown only when model changed and is reloading
-            if ttsEngine.isStarting {
-                HStack(spacing: 5) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 10))
-                    Text("Reloading model — speech will be available in a moment")
-                        .font(.system(size: 10))
-                }
-                .foregroundColor(Theme.textSecondary.opacity(0.7))
-            } else {
-                HStack(spacing: 5) {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 10))
-                    Text("Switching models reloads the engine. Speech is paused until loading completes.")
-                        .font(.system(size: 10))
-                }
-                .foregroundColor(Theme.textSecondary.opacity(0.5))
-            }
-        }
-    }
-}
-
-private struct ModelCard: View {
-    let variant: TTSModelVariant
-    let isSelected: Bool
-    let isLoading: Bool
-    let onSelect: () -> Void
-    @State private var isHovering = false
-
-    var body: some View {
-        Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 7) {
-                // Top: name + precision badge
-                HStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(variant.displayName)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Theme.textPrimary)
-                        Text(variant.fileSize)
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundColor(Theme.textSecondary)
-                    }
-                    Spacer()
-                    // Precision badge
-                    Text(variant.precision)
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundColor(precisionColor)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(precisionColor.opacity(0.15)))
-                }
-
-                // Quality bar
-                MetricBar(label: "Quality", score: variant.qualityScore, color: .green)
-                // Speed bar
-                MetricBar(label: "Speed", score: variant.speedScore, color: .blue)
-
-                // Recommendation tag
-                Text(variant.recommendation)
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(isSelected ? .accentColor.opacity(0.9) : Theme.textSecondary.opacity(0.6))
-                    .lineLimit(1)
-            }
-            .padding(10)
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isSelected
-                          ? Color.accentColor.opacity(0.15)
-                          : isHovering ? Theme.surfaceHover : Theme.surface)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected ? Color.accentColor.opacity(0.55) : Color.secondary.opacity(0.12),
-                            lineWidth: isSelected ? 1.5 : 0.5)
-            )
-            .overlay(alignment: .topTrailing) {
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.55)
-                        .frame(width: 16, height: 16)
-                        .padding(6)
-                } else if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 13))
-                        .foregroundColor(.accentColor)
-                        .padding(6)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovering = $0 }
-        .help(variant.description)
-    }
-
-    private var precisionColor: Color {
-        switch variant {
-        case .fp32: return .purple
-        case .fp16: return .teal
-        case .int8: return .orange
-        }
-    }
-}
-
-/// A 5-dot progress bar used for quality / speed scores.
-private struct MetricBar: View {
-    let label: String
-    let score: Int    // 1–5
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Text(label)
-                .font(.system(size: 9))
-                .foregroundColor(Theme.textSecondary.opacity(0.7))
-                .frame(width: 36, alignment: .leading)
-            HStack(spacing: 3) {
-                ForEach(1...5, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(i <= score ? color.opacity(0.8) : Color.secondary.opacity(0.15))
-                        .frame(width: 14, height: 5)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Voice Card
-
-private struct VoiceCard: View {
-    let voice: VoiceInfo
-    let isSelected: Bool
-    let isAvailable: Bool
-    let onSelect: () -> Void
-    @State private var isHovering = false
-
-    var body: some View {
-        Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 5) {
-                // Top row: name + grade badge
-                HStack(spacing: 0) {
-                    // Gender symbol
-                    Text(voice.gender.symbol)
-                        .font(.system(size: 10))
-                        .foregroundColor(voice.gender.color)
-                        .padding(.trailing, 4)
-
-                    Text(voice.displayName)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(isAvailable ? Theme.textPrimary : Theme.textSecondary)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    // Grade badge
-                    Text(voice.grade.label)
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundColor(voice.grade.color)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(voice.grade.color.opacity(0.15))
-                        )
-                }
-
-                // Description
-                Text(voice.description)
-                    .font(.system(size: 10))
-                    .foregroundColor(Theme.textSecondary.opacity(0.8))
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                // Trait pills
-                if !voice.traits.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(voice.traits, id: \.self) { trait in
-                            Text(trait)
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundColor(.secondary.opacity(0.7))
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 2)
-                                .background(
-                                    Capsule().fill(Color.secondary.opacity(0.1))
-                                )
-                        }
-                    }
-                }
-            }
-            .padding(10)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isSelected
-                          ? Color.accentColor.opacity(0.18)
-                          : isHovering ? Theme.surfaceHover : Theme.surface)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected
-                            ? Color.accentColor.opacity(0.6)
-                            : Color.secondary.opacity(0.12),
-                            lineWidth: isSelected ? 1.5 : 0.5)
-            )
-            .opacity(isAvailable ? 1 : 0.45)
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovering = $0 }
-        .help(isAvailable ? voice.description : "Not available in current model build")
-    }
-}
-
-// MARK: - Filter Chip
-
-private struct FilterChip: View {
-    let label: String
-    let isOn: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(label)
-                .font(.system(size: 13))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(
-                    Capsule()
-                        .fill(isOn ? Color.accentColor.opacity(0.25) : Color.secondary.opacity(0.1))
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(isOn ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1)
-                )
-        }
-        .buttonStyle(.plain)
+        ttsEngine.speak(text: sampleText)
+        // Reset the previewing spinner once speaking begins
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { isPreviewing = false }
     }
 }
 
@@ -744,19 +434,13 @@ private struct ContextSizeCard: View {
     var body: some View {
         Button(action: onSelect) {
             VStack(alignment: .leading, spacing: 5) {
-                // Token count label
                 Text(option.label)
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundColor(isSelected ? .accentColor : Theme.textPrimary)
-
-                // RAM estimate
                 Text(String(format: "~%.1f GB KV", option.kvCacheGB))
                     .font(.system(size: 9, design: .monospaced))
                     .foregroundColor(Theme.textSecondary)
-
                 Divider().opacity(0.3)
-
-                // Speed note
                 HStack(spacing: 3) {
                     Image(systemName: speedIcon)
                         .font(.system(size: 8))
@@ -765,8 +449,6 @@ private struct ContextSizeCard: View {
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(speedColor)
                 }
-
-                // Use-case label
                 Text(option.useCaseLabel)
                     .font(.system(size: 9))
                     .foregroundColor(Theme.textSecondary.opacity(0.75))
@@ -777,13 +459,13 @@ private struct ContextSizeCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 9)
-                    .fill(isSelected
-                          ? Color.accentColor.opacity(0.15)
+                    .fill(isSelected ? Color.accentColor.opacity(0.15)
                           : isHovering ? Theme.surfaceHover : Theme.surface)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 9)
-                    .stroke(isSelected ? Color.accentColor.opacity(0.55) : Color.secondary.opacity(0.12),
+                    .stroke(isSelected ? Color.accentColor.opacity(0.55)
+                            : Color.secondary.opacity(0.12),
                             lineWidth: isSelected ? 1.5 : 0.5)
             )
             .opacity(isDisabled ? 0.5 : 1)
@@ -817,14 +499,11 @@ private struct GeneralSection: View {
     @ObservedObject var ttsEngine: TTSEngine
     @ObservedObject var engine: ChatEngine
 
-    // 8 global layers × 4 KV heads × 2 (K+V) × 256 dim × 2 bytes (FP16) = 16 384 bytes ≈ 16 KB per token.
-    // 40 SWA layers hold a fixed 1 024-token window (~335 MB) regardless of n_ctx.
     private let kvPerTokenKB = 16
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             sectionHeader("General")
-
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
 
@@ -836,21 +515,18 @@ private struct GeneralSection: View {
                             subtitle: "Automatically read each assistant reply aloud when generation finishes.",
                             isOn: $ttsEngine.autoSpeak
                         )
-
                         Divider().opacity(0.4)
-
-                        // TTS model status
                         HStack(spacing: 10) {
                             Image(systemName: ttsEngine.isReady ? "checkmark.circle.fill" : "clock.circle")
                                 .font(.system(size: 14))
                                 .foregroundColor(ttsEngine.isReady ? .green : .secondary)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Kokoro v1.0 ONNX")
+                                Text("Qwen3-TTS 1.7B · MLX Audio")
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundColor(Theme.textPrimary)
                                 Text(ttsEngine.isReady
-                                     ? "Model loaded · \(ttsEngine.availableVoices.count) voices available"
-                                     : ttsEngine.isStarting ? "Loading…" : "Not loaded — click Listen to load")
+                                     ? "Daemon ready · \(ttsEngine.qwen3Model.displayName) mode"
+                                     : ttsEngine.isStarting ? "Loading daemon…" : "Not loaded")
                                     .font(.system(size: 11))
                                     .foregroundColor(Theme.textSecondary)
                             }
@@ -876,38 +552,29 @@ private struct GeneralSection: View {
                             .lineSpacing(2)
                             .padding(.bottom, 6)
 
-                        // Four option cards
                         HStack(spacing: 8) {
                             ForEach(ContextSizeOption.allCases) { option in
                                 ContextSizeCard(
                                     option: option,
                                     isSelected: engine.contextSizeOption == option,
                                     isDisabled: engine.isGenerating
-                                ) {
-                                    engine.contextSizeOption = option
-                                }
+                                ) { engine.contextSizeOption = option }
                             }
                         }
-
                         Divider().opacity(0.4).padding(.vertical, 4)
-
-                        // Architecture note
                         InfoRow(icon: "cpu",
-                                text: "Hybrid SWA architecture: 40 sliding-window layers hold a fixed 1 024-token window (~335 MB, same at every context size). " +
+                                text: "Hybrid SWA architecture: 40 sliding-window layers hold a fixed 1 024-token window (~335 MB). " +
                                       "Only 8 global attention layers scale linearly (~\(kvPerTokenKB) KB per token). " +
-                                      "Flash attention is enabled — reduces memory bandwidth for global layers significantly.")
+                                      "Flash attention enabled.")
                     }
 
                     // ── Language note ────────────────────────────────────────
                     settingsGroup("Language Support") {
                         InfoRow(icon: "globe", text:
-                            "Kokoro v1.0 supports English only — American (en-US) and British RP (en-GB). " +
-                            "The text is phonemised by espeak-ng before being fed to the neural model. " +
-                            "Foreign words will be read with an English accent.")
+                            "Qwen3-TTS supports 10 languages: English, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Spanish, and Italian.")
                         Divider().opacity(0.4)
                         InfoRow(icon: "textformat.abc", text:
-                            "Markdown is stripped before synthesis. Code blocks, URLs, and special symbols " +
-                            "are removed so they don't interrupt speech.")
+                            "Markdown is stripped before synthesis. Code blocks, URLs, and special symbols are removed so they don't interrupt speech.")
                     }
                 }
                 .padding(20)
@@ -927,7 +594,6 @@ private struct AboutSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             sectionHeader("About")
-
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
 
@@ -977,24 +643,28 @@ private struct AboutSection: View {
                         Divider().opacity(0.4)
                         modelInfoRow(label: "Auto-speak",   value: ttsEngine.autoSpeak ? "On" : "Off")
                         Divider().opacity(0.4)
-                        modelInfoRow(label: "TTS voice",    value: ttsEngine.selectedVoice)
+                        modelInfoRow(label: "TTS mode",     value: ttsEngine.qwen3Model.displayName)
+                        Divider().opacity(0.4)
+                        modelInfoRow(label: "TTS voice",    value: ttsEngine.qwen3Model == .voiceDesign
+                            ? (ttsEngine.voiceDesignPrompt.isEmpty ? "No description set" : "Custom design")
+                            : ttsEngine.selectedVoice)
                     }
 
                     settingsGroup("Text-to-Speech") {
-                        modelInfoRow(label: "Engine", value: "Kokoro v1.0")
+                        modelInfoRow(label: "Engine",   value: "Qwen3-TTS 1.7B")
                         Divider().opacity(0.4)
-                        modelInfoRow(label: "Active model",
-                                     value: "\(ttsEngine.selectedModel.displayName) · \(ttsEngine.selectedModel.precision) · \(ttsEngine.selectedModel.fileSize)")
+                        modelInfoRow(label: "Backend",  value: "MLX Audio · Apple Silicon")
                         Divider().opacity(0.4)
-                        modelInfoRow(label: "Backend", value: "ONNX Runtime")
+                        modelInfoRow(label: "License",  value: "Apache 2.0")
                         Divider().opacity(0.4)
-                        modelInfoRow(label: "Phonemiser", value: "espeak-ng")
+                        modelInfoRow(label: "Output",   value: "24 kHz · WAV · SNAC codec")
                         Divider().opacity(0.4)
-                        modelInfoRow(label: "Output", value: "24 kHz · mono · float32 PCM")
+                        modelInfoRow(label: "Languages", value: "10 languages incl. EN, ZH, JA, DE, FR")
                         Divider().opacity(0.4)
                         InfoRow(icon: "info.circle",
-                                text: "Kokoro is an open-weight TTS model. Voices are language-specific: " +
-                                      "\"af_\" / \"am_\" use en-US phonemes; \"bf_\" / \"bm_\" use en-GB (RP).")
+                                text: "Qwen3-TTS runs via a persistent Python daemon (mlx-audio). " +
+                                      "First synthesis per session takes ~5-8 s while the model loads into RAM. " +
+                                      "Subsequent calls take ~3 s. Peak RAM: ~8 GB for the TTS model alone.")
                     }
                 }
                 .padding(20)
@@ -1040,7 +710,6 @@ private func settingsGroup<Content: View>(_ title: String, @ViewBuilder content:
             .foregroundColor(Theme.textSecondary.opacity(0.7))
             .textCase(.uppercase)
             .kerning(0.5)
-
         VStack(alignment: .leading, spacing: 8) {
             content()
         }

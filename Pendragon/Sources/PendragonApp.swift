@@ -51,6 +51,7 @@ struct PendragonApp: App {
                     // Wire delegate → engines so it can drive shutdown.
                     appDelegate.engine    = engine
                     appDelegate.ttsEngine = ttsEngine
+                    engine.ttsEngine      = ttsEngine
                 }
         }
         .windowStyle(.titleBar)
