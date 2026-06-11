@@ -404,13 +404,34 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
             _gen = generate_audio
         return _gen
 
-    def do_generate(req):
-        output = req.get("output", "")
-        text   = req.get("text",   "").strip()
-        if not text:
-            return {"ok": False, "error": "empty text"}
+    def _find_wav(output_dir):
+        """Return the WAV path written by mlx-audio into output_dir, or None."""
+        p = Path(output_dir)
+        if not p.is_dir():
+            return str(p) if p.exists() else None
+        joined = p / "audio.wav"
+        if joined.exists():
+            return str(joined)
+        found = sorted(p.glob("audio_*.wav"))
+        return str(found[0]) if found else None
 
-        model_key = req.get("model", "customvoice")
+    def _concat_wavs(paths, dest):
+        """Concatenate WAV files in paths into dest using Python wave module."""
+        import wave
+        frames = []
+        params = None
+        for path in paths:
+            with wave.open(path, "rb") as wf:
+                if params is None:
+                    params = wf.getparams()
+                frames.append(wf.readframes(wf.getnframes()))
+        with wave.open(dest, "wb") as wf:
+            wf.setparams(params)
+            for f in frames:
+                wf.writeframes(f)
+
+    def _run_one(text, model_key, req, out_dir):
+        """Generate audio for a single text chunk into out_dir."""
         get_gen()(
             text         = text,
             model        = MODEL_IDS.get(model_key, MODEL_IDS["customvoice"]),
@@ -418,37 +439,65 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
             voice        = req.get("voice", "vivian"),
             speed        = float(req.get("speed", 1.0)),
             lang_code    = req.get("lang_code", "auto"),
-            output_path  = output,
+            output_path  = out_dir,
             audio_format = "wav",
-            join_audio   = True,   # all segments joined into one file
-            max_tokens   = 4096,   # default 1200 cuts off long paragraphs
+            join_audio   = True,
+            max_tokens   = 4096,
             save         = True,
             play         = False,
             verbose      = False,
         )
 
-        # mlx-audio treats output_path as a directory; with join_audio=True it
-        # writes {output}/audio.wav; without it writes {output}/audio_000.wav etc.
-        p = Path(output)
-        if p.is_dir():
-            joined = p / "audio.wav"          # join_audio=True result
-            if joined.exists():
-                return {"ok": True, "path": str(joined)}
-            found = sorted(p.glob("audio_*.wav"))  # fallback: first segment
-            if found:
-                return {"ok": True, "path": str(found[0])}
-        elif p.exists():
-            return {"ok": True, "path": str(p)}
+    def do_generate(req):
+        import tempfile, shutil
+        output = req.get("output", "")
+        text   = req.get("text",   "").strip()
+        if not text:
+            return {"ok": False, "error": "empty text"}
 
-        # Last resort: directory variant appended to given path
-        parent = p.parent
-        stem   = p.name.replace(".wav", "")
-        for pat in [f"{stem}*/audio.wav", f"{stem}*/audio_*.wav"]:
-            found = sorted(parent.glob(pat))
-            if found:
-                return {"ok": True, "path": str(found[0])}
+        model_key = req.get("model", "customvoice")
 
-        return {"ok": False, "error": "output file not found after generation"}
+        # custom_voice and voice_design do NOT use split_pattern internally —
+        # max_tokens applies to the full text as one block (~5 min cap at 4096).
+        # We split on newlines here and concatenate the WAVs so long articles
+        # don't get cut off after the first few paragraphs.
+        paragraphs = [p.strip() for p in text.split("\\n") if p.strip()]
+
+        Path(output).mkdir(parents=True, exist_ok=True)
+        final_wav = str(Path(output) / "audio.wav")
+
+        if len(paragraphs) <= 1:
+            _run_one(text, model_key, req, output)
+            wav = _find_wav(output)
+            if wav:
+                return {"ok": True, "path": wav}
+            return {"ok": False, "error": "output file not found after generation"}
+
+        # Multi-paragraph: generate each separately, then concatenate
+        tmp_dirs = []
+        wav_paths = []
+        try:
+            for para in paragraphs:
+                tmp = tempfile.mkdtemp()
+                tmp_dirs.append(tmp)
+                _run_one(para, model_key, req, tmp)
+                wav = _find_wav(tmp)
+                if wav:
+                    wav_paths.append(wav)
+
+            if not wav_paths:
+                return {"ok": False, "error": "no audio generated for any paragraph"}
+
+            if len(wav_paths) == 1:
+                import shutil as _sh
+                _sh.copy2(wav_paths[0], final_wav)
+            else:
+                _concat_wavs(wav_paths, final_wav)
+
+            return {"ok": True, "path": final_wav}
+        finally:
+            for d in tmp_dirs:
+                shutil.rmtree(d, ignore_errors=True)
 
     def main():
         for raw in sys.stdin:
