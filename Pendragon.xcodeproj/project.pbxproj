@@ -1,0 +1,461 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1000001 /* PendragonApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000001; };
+		A1000002 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002; };
+		A1000003 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000003; };
+		A1000004 /* ChatEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000004; };
+		A1000005 /* LlamaEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000005; };
+		A1000006 /* WebSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000006; };
+		A1000007 /* ChatStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000007; };
+		A1000008 /* VisualizationWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000008; };
+		A1000030 /* TTSEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000030; };
+		A1000040 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000040; };
+		A1000031 /* kokoro_server.py in Resources */ = {isa = PBXBuildFile; fileRef = B1000031; };
+		A1000010 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000010; };
+		A1000011 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000011; };
+		A1000012 /* libllama.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000012; };
+		A1000013 /* libggml.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000013; };
+		A1000014 /* libggml-base.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000014; };
+		A1000015 /* libggml-metal.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000015; };
+		A1000016 /* libggml-cpu.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000016; };
+		A1000017 /* libggml-blas.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000017; };
+		A1000018 /* libmtmd.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000018; };
+		A1000019 /* libllama-common.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B1000019; };
+		A1000020 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000020; };
+		A2000001 /* KokoroTTS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B2000001; };
+		A2000002 /* KokoroBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000002; };
+		A2000003 /* libonnxruntime.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = B2000003; };
+		A2000004 /* libonnxruntime.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = B2000003; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		A2000005 /* libespeak-ng.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = B2000004; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		A2000006 /* kokoro-v1.0.onnx in Resources */ = {isa = PBXBuildFile; fileRef = B2000005; };
+		A2000009 /* kokoro-v1.0.fp16.onnx in Resources */ = {isa = PBXBuildFile; fileRef = B2000008; };
+		A2000010 /* kokoro-v1.0.int8.onnx in Resources */ = {isa = PBXBuildFile; fileRef = B2000009; };
+		A2000007 /* voices.bin in Resources */ = {isa = PBXBuildFile; fileRef = B2000006; };
+		A2000008 /* espeak-ng-data in Resources */ = {isa = PBXBuildFile; fileRef = B2000007; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B1000000 /* Pendragon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pendragon.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1000001 /* PendragonApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendragonApp.swift; sourceTree = "<group>"; };
+		B1000002 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		B1000003 /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
+		B1000004 /* ChatEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatEngine.swift; sourceTree = "<group>"; };
+		B1000005 /* LlamaEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LlamaEngine.swift; sourceTree = "<group>"; };
+		B1000006 /* WebSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchService.swift; sourceTree = "<group>"; };
+		B1000007 /* ChatStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatStore.swift; sourceTree = "<group>"; };
+		B1000008 /* VisualizationWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualizationWindow.swift; sourceTree = "<group>"; };
+		B1000010 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		B1000011 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		B1000012 /* libllama.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libllama.a; path = "llama.cpp/build-macos/src/libllama.a"; sourceTree = "<group>"; };
+		B1000013 /* libggml.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libggml.a; path = "llama.cpp/build-macos/ggml/src/libggml.a"; sourceTree = "<group>"; };
+		B1000014 /* libggml-base.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-base.a"; path = "llama.cpp/build-macos/ggml/src/libggml-base.a"; sourceTree = "<group>"; };
+		B1000015 /* libggml-metal.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-metal.a"; path = "llama.cpp/build-macos/ggml/src/ggml-metal/libggml-metal.a"; sourceTree = "<group>"; };
+		B1000016 /* libggml-cpu.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-cpu.a"; path = "llama.cpp/build-macos/ggml/src/libggml-cpu.a"; sourceTree = "<group>"; };
+		B1000017 /* libggml-blas.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libggml-blas.a"; path = "llama.cpp/build-macos/ggml/src/ggml-blas/libggml-blas.a"; sourceTree = "<group>"; };
+		B1000018 /* libmtmd.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libmtmd.a"; path = "llama.cpp/build-macos/tools/mtmd/libmtmd.a"; sourceTree = "<group>"; };
+		B1000019 /* libllama-common.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libllama-common.a"; path = "llama.cpp/build-macos/common/libllama-common.a"; sourceTree = "<group>"; };
+		B1000020 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B1000030 /* TTSEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSEngine.swift; sourceTree = "<group>"; };
+		B1000040 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B1000031 /* kokoro_server.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = kokoro_server.py; sourceTree = "<group>"; };
+		B2000001 /* KokoroTTS.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = KokoroTTS.cpp; path = "$(PROJECT_DIR)/KokoroKit/src/KokoroTTS.cpp"; sourceTree = "<absolute>"; };
+		B2000002 /* KokoroBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KokoroBridge.swift; sourceTree = "<group>"; };
+		B2000003 /* libonnxruntime.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libonnxruntime.dylib; path = "$(PROJECT_DIR)/Frameworks/libonnxruntime.dylib"; sourceTree = "<absolute>"; };
+		B2000004 /* libespeak-ng.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libespeak-ng.dylib"; path = "$(PROJECT_DIR)/Frameworks/libespeak-ng.dylib"; sourceTree = "<absolute>"; };
+		B2000005 /* kokoro-v1.0.onnx */ = {isa = PBXFileReference; lastKnownFileType = file; name = "kokoro-v1.0.onnx"; path = "$(PROJECT_DIR)/kokoro/kokoro-v1.0.onnx"; sourceTree = "<absolute>"; };
+		B2000008 /* kokoro-v1.0.fp16.onnx */ = {isa = PBXFileReference; lastKnownFileType = file; name = "kokoro-v1.0.fp16.onnx"; path = "$(PROJECT_DIR)/kokoro/kokoro-v1.0.fp16.onnx"; sourceTree = "<absolute>"; };
+		B2000009 /* kokoro-v1.0.int8.onnx */ = {isa = PBXFileReference; lastKnownFileType = file; name = "kokoro-v1.0.int8.onnx"; path = "$(PROJECT_DIR)/kokoro/kokoro-v1.0.int8.onnx"; sourceTree = "<absolute>"; };
+		B2000006 /* voices.bin */ = {isa = PBXFileReference; lastKnownFileType = file; name = voices.bin; path = "$(PROJECT_DIR)/kokoro/voices.bin"; sourceTree = "<absolute>"; };
+		B2000007 /* espeak-ng-data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "espeak-ng-data"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C2000001 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				A2000004 /* libonnxruntime.dylib in CopyFiles */,
+				A2000005 /* libespeak-ng.dylib in CopyFiles */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C1000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000010 /* Metal.framework in Frameworks */,
+				A1000011 /* Accelerate.framework in Frameworks */,
+				A1000012 /* libllama.a in Frameworks */,
+				A1000013 /* libggml.a in Frameworks */,
+				A1000014 /* libggml-base.a in Frameworks */,
+				A1000015 /* libggml-metal.a in Frameworks */,
+				A1000016 /* libggml-cpu.a in Frameworks */,
+				A1000017 /* libggml-blas.a in Frameworks */,
+				A1000018 /* libmtmd.a in Frameworks */,
+				A1000019 /* libllama-common.a in Frameworks */,
+				A2000003 /* libonnxruntime.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D1000001 = {
+			isa = PBXGroup;
+			children = (
+				D1000002 /* Pendragon */,
+				D1000003 /* Frameworks */,
+				D1000004 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D1000002 /* Pendragon */ = {
+			isa = PBXGroup;
+			children = (
+				D1000005 /* Sources */,
+				D1000006 /* Resources */,
+			);
+			path = Pendragon;
+			sourceTree = "<group>";
+		};
+		D1000003 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B1000010 /* Metal.framework */,
+				B1000011 /* Accelerate.framework */,
+				B1000012 /* libllama.a */,
+				B1000013 /* libggml.a */,
+				B1000014 /* libggml-base.a */,
+				B1000015 /* libggml-metal.a */,
+				B1000016 /* libggml-cpu.a */,
+				B1000017 /* libggml-blas.a */,
+				B1000018 /* libmtmd.a */,
+				B1000019 /* libllama-common.a */,
+				B2000003 /* libonnxruntime.dylib */,
+				B2000004 /* libespeak-ng.dylib */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D1000004 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B1000000 /* Pendragon.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D1000005 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				B1000001 /* PendragonApp.swift */,
+				B1000002 /* ChatView.swift */,
+				B1000003 /* ChatMessage.swift */,
+				B1000004 /* ChatEngine.swift */,
+				B1000005 /* LlamaEngine.swift */,
+				B1000006 /* WebSearchService.swift */,
+				B1000007 /* ChatStore.swift */,
+				B1000008 /* VisualizationWindow.swift */,
+				B1000030 /* TTSEngine.swift */,
+				B1000040 /* SettingsView.swift */,
+				B2000002 /* KokoroBridge.swift */,
+				B2000001 /* KokoroTTS.cpp */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		D1000006 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B1000020 /* Assets.xcassets */,
+				B1000031 /* kokoro_server.py */,
+				B2000005 /* kokoro-v1.0.onnx */,
+				B2000008 /* kokoro-v1.0.fp16.onnx */,
+				B2000009 /* kokoro-v1.0.int8.onnx */,
+				B2000006 /* voices.bin */,
+				B2000007 /* espeak-ng-data */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E1000001 /* Pendragon */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F1000002;
+			buildPhases = (
+				C1000002 /* Sources */,
+				C1000001 /* Frameworks */,
+				C1000003 /* Resources */,
+				C2000001 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Pendragon;
+			productName = Pendragon;
+			productReference = B1000000 /* Pendragon.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D1000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = F1000001;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D1000001;
+			productRefGroup = D1000004 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E1000001 /* Pendragon */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C1000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000020 /* Assets.xcassets in Resources */,
+				A1000031 /* kokoro_server.py in Resources */,
+				A2000006 /* kokoro-v1.0.onnx in Resources */,
+				A2000009 /* kokoro-v1.0.fp16.onnx in Resources */,
+				A2000010 /* kokoro-v1.0.int8.onnx in Resources */,
+				A2000007 /* voices.bin in Resources */,
+				A2000008 /* espeak-ng-data in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C1000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000001 /* PendragonApp.swift in Sources */,
+				A1000002 /* ChatView.swift in Sources */,
+				A1000003 /* ChatMessage.swift in Sources */,
+				A1000004 /* ChatEngine.swift in Sources */,
+				A1000005 /* LlamaEngine.swift in Sources */,
+				A1000006 /* WebSearchService.swift in Sources */,
+				A1000007 /* ChatStore.swift in Sources */,
+				A1000008 /* VisualizationWindow.swift in Sources */,
+				A1000030 /* TTSEngine.swift in Sources */,
+				A1000040 /* SettingsView.swift in Sources */,
+				A2000002 /* KokoroBridge.swift in Sources */,
+				A2000001 /* KokoroTTS.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		G1000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		G1000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		G1000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Pendragon uses your microphone for voice input to the AI model.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Pendragon can create calendar events when you ask the AI assistant.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Pendragon can add reminders when you ask the AI assistant.";
+				ENABLE_APP_SANDBOX = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/KokoroKit/include",
+					"$(PROJECT_DIR)/kokoro/onnxruntime-osx-arm64-1.26.0/include",
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/llama.cpp/build-macos/src",
+					"$(PROJECT_DIR)/llama.cpp/build-macos/ggml/src",
+					"$(PROJECT_DIR)/llama.cpp/build-macos/ggml/src/ggml-metal",
+					"$(PROJECT_DIR)/llama.cpp/build-macos/ggml/src/ggml-blas",
+					"$(PROJECT_DIR)/llama.cpp/build-macos/tools/mtmd",
+					"$(PROJECT_DIR)/llama.cpp/build-macos/common",
+					"$(PROJECT_DIR)/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-lonnxruntime",
+					"-framework",
+					Metal,
+					"-framework",
+					Accelerate,
+					"-framework",
+					Foundation,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pendragon.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_INCLUDE_PATHS = (
+					"$(PROJECT_DIR)/LlamaKit/include",
+					"$(PROJECT_DIR)/KokoroKit/include",
+				);
+			};
+			name = Debug;
+		};
+		G1000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Pendragon uses your microphone for voice input to the AI model.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Pendragon can create calendar events when you ask the AI assistant.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Pendragon can add reminders when you ask the AI assistant.";
+				ENABLE_APP_SANDBOX = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/KokoroKit/include",
+					"$(PROJECT_DIR)/kokoro/onnxruntime-osx-arm64-1.26.0/include",
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/llama.cpp/build-macos/src",
+					"$(PROJECT_DIR)/llama.cpp/build-macos/ggml/src",
+					"$(PROJECT_DIR)/llama.cpp/build-macos/ggml/src/ggml-metal",
+					"$(PROJECT_DIR)/llama.cpp/build-macos/ggml/src/ggml-blas",
+					"$(PROJECT_DIR)/llama.cpp/build-macos/tools/mtmd",
+					"$(PROJECT_DIR)/llama.cpp/build-macos/common",
+					"$(PROJECT_DIR)/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-lc++",
+					"-lonnxruntime",
+					"-framework",
+					Metal,
+					"-framework",
+					Accelerate,
+					"-framework",
+					Foundation,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pendragon.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_INCLUDE_PATHS = (
+					"$(PROJECT_DIR)/LlamaKit/include",
+					"$(PROJECT_DIR)/KokoroKit/include",
+				);
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F1000001 /* Build configuration list for PBXProject "Pendragon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				G1000001 /* Debug */,
+				G1000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F1000002 /* Build configuration list for PBXNativeTarget "Pendragon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				G1000003 /* Debug */,
+				G1000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = D1000000 /* Project object */;
+}

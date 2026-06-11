@@ -1,0 +1,44 @@
+# Xcode build output
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Compiled frameworks (rebuilt by Xcode)
+Frameworks/
+
+# llama.cpp compiled objects and binaries
+llama.cpp/build*/
+llama.cpp/**/*.o
+llama.cpp/**/*.a
+
+# kokoro compiled output
+kokoro/build*/
+kokoro/**/*.o
+kokoro/**/*.a
+
+# Model files (large binaries — not for git)
+*.gguf
+*.bin
+*.safetensors
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Swift Package Manager
+.build/
+*.resolved
+
+# Xcode
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+kokoro/
+Frameworks/
