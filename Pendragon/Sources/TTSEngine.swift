@@ -94,11 +94,12 @@ class TTSEngine: NSObject, ObservableObject {
         let voice       = UserDefaults.standard.string(forKey: "tts.selectedVoice") ?? Qwen3TTSBridge.defaultVoice
         let speed       = UserDefaults.standard.float(forKey: "tts.speechSpeed")
         let modelRaw    = UserDefaults.standard.string(forKey: "tts.qwen3Model") ?? ""
-        let designPrompt = UserDefaults.standard.string(forKey: "tts.voiceDesignPrompt") ?? ""
+        let designPrompt = UserDefaults.standard.string(forKey: "tts.voiceDesignPrompt")
+            ?? "A british english voice, woman in her 90s. Friendly and straight to the point."
         let emotion     = UserDefaults.standard.string(forKey: "tts.emotionInstruct") ?? ""
         selectedVoice       = voice
         speechSpeed         = speed > 0 ? speed : 1.0
-        qwen3Model          = Qwen3Model(rawValue: modelRaw) ?? .customVoice
+        qwen3Model          = Qwen3Model(rawValue: modelRaw) ?? .voiceDesign
         voiceDesignPrompt   = designPrompt
         emotionInstruct     = emotion
         autoSpeak           = UserDefaults.standard.bool(forKey: "tts.autoSpeak")

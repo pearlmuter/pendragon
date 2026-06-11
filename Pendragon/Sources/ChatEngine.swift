@@ -1201,22 +1201,26 @@ class ChatEngine: ObservableObject {
         return prompt
     }
 
-    /// Shows the dock dot immediately if TTS is idle, or waits until synthesis
-    /// drains before showing it — so the dot appears only when the reply is fully ready.
+    /// Shows the dock dot once TTS synthesis drains, or immediately if TTS is idle.
+    /// Deferred by one main-queue cycle so ChatView's .onChange has time to call
+    /// synthesizeBackground before we check synthesizingIds.
     private func showDockDotAfterTTS() {
-        guard let tts = ttsEngine, !tts.synthesizingIds.isEmpty else {
-            Self.setDockDot(true)
-            return
-        }
-        dockDotCancellable = tts.$synthesizingIds
-            .filter { $0.isEmpty }
-            .first()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                guard !NSApp.isActive else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            guard let self else { return }
+            guard let tts = self.ttsEngine, !tts.synthesizingIds.isEmpty else {
                 Self.setDockDot(true)
-                self?.dockDotCancellable = nil
+                return
             }
+            self.dockDotCancellable = tts.$synthesizingIds
+                .filter { $0.isEmpty }
+                .first()
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] _ in
+                    guard !NSApp.isActive else { return }
+                    Self.setDockDot(true)
+                    self?.dockDotCancellable = nil
+                }
+        }
     }
 
     /// Draws a small red notification dot on the dock icon (half the size of the
