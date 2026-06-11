@@ -139,6 +139,7 @@ private struct VoiceSection: View {
                         speakerGrid
                         emotionEditor
                     }
+                    languagePicker
                 }
                 .padding(16)
             }
@@ -192,23 +193,42 @@ private struct VoiceSection: View {
     // MARK: Model picker (Custom Voice / Voice Design)
 
     private var modelPicker: some View {
-        HStack(spacing: 0) {
-            ForEach(Qwen3Model.allCases, id: \.self) { m in
-                modelTab(m)
+        VStack(spacing: 10) {
+            // Top-level: Custom Voice vs Voice Design
+            HStack(spacing: 8) {
+                logicalModelTab(isCustomVoice: true)
+                logicalModelTab(isCustomVoice: false)
+            }
+            // Sub-picker: size, only shown for Custom Voice
+            if ttsEngine.qwen3Model.isCustomVoice {
+                HStack(spacing: 0) {
+                    sizeTab(.customVoiceSmall, label: "Compact  0.6B", detail: "Faster, less RAM")
+                    sizeTab(.customVoice,      label: "Full  1.7B",     detail: "Best quality")
+                }
+                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.secondary.opacity(0.12), lineWidth: 0.5))
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
     }
 
-    private func modelTab(_ m: Qwen3Model) -> some View {
-        let selected = ttsEngine.qwen3Model == m
-        return Button(action: { ttsEngine.qwen3Model = m }) {
+    private func logicalModelTab(isCustomVoice: Bool) -> some View {
+        let m: Qwen3Model = isCustomVoice
+            ? (ttsEngine.qwen3Model.isCustomVoice ? ttsEngine.qwen3Model : .customVoice)
+            : .voiceDesign
+        let selected = ttsEngine.qwen3Model.isCustomVoice == isCustomVoice
+        return Button(action: {
+            ttsEngine.qwen3Model = isCustomVoice
+                ? (ttsEngine.qwen3Model.isCustomVoice ? ttsEngine.qwen3Model : .customVoice)
+                : .voiceDesign
+        }) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(m.displayName)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(selected ? .accentColor : Theme.textPrimary)
-                Text(m.subtitle)
+                Text(isCustomVoice ? "9 preset speakers + emotion" : "Design any voice from text")
                     .font(.system(size: 10))
                     .foregroundColor(Theme.textSecondary)
             }
@@ -227,7 +247,26 @@ private struct VoiceSection: View {
             )
         }
         .buttonStyle(.plain)
-        .padding(.trailing, m == .customVoice ? 8 : 0)
+    }
+
+    private func sizeTab(_ model: Qwen3Model, label: String, detail: String) -> some View {
+        let selected = ttsEngine.qwen3Model == model
+        return Button(action: { ttsEngine.qwen3Model = model }) {
+            VStack(spacing: 1) {
+                Text(label)
+                    .font(.system(size: 11, weight: selected ? .semibold : .regular))
+                    .foregroundColor(selected ? .accentColor : Theme.textSecondary)
+                Text(detail)
+                    .font(.system(size: 9))
+                    .foregroundColor(Theme.textSecondary.opacity(0.7))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 7)
+            .background(selected ? Color.accentColor.opacity(0.13) : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 7))
+        }
+        .buttonStyle(.plain)
+        .padding(2)
     }
 
     // MARK: Voice Design editor
@@ -274,17 +313,17 @@ private struct VoiceSection: View {
         settingsGroup("Speaker") {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
                       spacing: 8) {
-                ForEach(qwen3Voices, id: \.self) { name in
-                    speakerCard(name)
+                ForEach(qwen3Voices) { v in
+                    speakerCard(v)
                 }
             }
         }
     }
 
-    private func speakerCard(_ name: String) -> some View {
-        let selected = ttsEngine.selectedVoice == name
-        return Button(action: { ttsEngine.selectedVoice = name }) {
-            Text(name)
+    private func speakerCard(_ v: Qwen3Voice) -> some View {
+        let selected = ttsEngine.selectedVoice == v.id
+        return Button(action: { ttsEngine.selectedVoice = v.id }) {
+            Text(v.displayName)
                 .font(.system(size: 13, weight: selected ? .semibold : .regular))
                 .foregroundColor(selected ? .accentColor : Theme.textPrimary)
                 .frame(maxWidth: .infinity)
@@ -336,6 +375,49 @@ private struct VoiceSection: View {
                     .padding(6)
             }
         }
+    }
+
+    // MARK: Language picker
+
+    private var languagePicker: some View {
+        settingsGroup("Output Language") {
+            Text("Hint the model about the language of your text. \"Auto\" works well for English and most common languages, but setting it explicitly can improve pronunciation.")
+                .font(.system(size: 11))
+                .foregroundColor(Theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .lineSpacing(2)
+                .padding(.bottom, 4)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()),
+                                 GridItem(.flexible()), GridItem(.flexible())],
+                      spacing: 6) {
+                ForEach(qwen3Languages) { lang in
+                    langChip(lang)
+                }
+            }
+        }
+    }
+
+    private func langChip(_ lang: Qwen3Language) -> some View {
+        let selected = ttsEngine.langCode == lang.id
+        return Button(action: { ttsEngine.langCode = lang.id }) {
+            Text(lang.displayName)
+                .font(.system(size: 11, weight: selected ? .semibold : .regular))
+                .foregroundColor(selected ? .accentColor : Theme.textSecondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(selected ? Color.accentColor.opacity(0.13) : Theme.surface)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7)
+                        .stroke(selected ? Color.accentColor.opacity(0.5)
+                                : Color.secondary.opacity(0.12),
+                                lineWidth: selected ? 1.5 : 0.5)
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: Speed + Preview bar
@@ -397,8 +479,10 @@ private struct VoiceSection: View {
         switch ttsEngine.qwen3Model {
         case .voiceDesign:
             sampleText = "Hello. This is a preview of your designed voice."
-        case .customVoice:
-            sampleText = "Hello, I'm \(ttsEngine.selectedVoice). This is how I sound."
+        case .customVoice, .customVoiceSmall:
+            let name = qwen3Voices.first { $0.id == ttsEngine.selectedVoice }?.displayName
+                       ?? ttsEngine.selectedVoice
+            sampleText = "Hello, I'm \(name). This is how I sound."
         }
         ttsEngine.speak(text: sampleText)
         // Reset the previewing spinner once speaking begins

@@ -40,6 +40,10 @@ class TTSEngine: NSObject, ObservableObject {
         didSet { UserDefaults.standard.set(emotionInstruct, forKey: "tts.emotionInstruct") }
     }
 
+    @Published var langCode: String {
+        didSet { UserDefaults.standard.set(langCode, forKey: "tts.langCode") }
+    }
+
     /// Message IDs currently queued or being synthesised.
     @Published var synthesizingIds: Set<UUID> = []
 
@@ -91,17 +95,21 @@ class TTSEngine: NSObject, ObservableObject {
     // MARK: - Init
 
     override init() {
-        let voice       = UserDefaults.standard.string(forKey: "tts.selectedVoice") ?? Qwen3TTSBridge.defaultVoice
+        let rawVoice    = UserDefaults.standard.string(forKey: "tts.selectedVoice") ?? Qwen3TTSBridge.defaultVoice
+        // Migrate old title-cased names to lowercase IDs used by the model
+        let voice       = rawVoice.lowercased().replacingOccurrences(of: " ", with: "_")
         let speed       = UserDefaults.standard.float(forKey: "tts.speechSpeed")
         let modelRaw    = UserDefaults.standard.string(forKey: "tts.qwen3Model") ?? ""
         let designPrompt = UserDefaults.standard.string(forKey: "tts.voiceDesignPrompt")
             ?? "A british english voice, woman in her 90s. Friendly and straight to the point."
         let emotion     = UserDefaults.standard.string(forKey: "tts.emotionInstruct") ?? ""
+        let lang        = UserDefaults.standard.string(forKey: "tts.langCode") ?? "auto"
         selectedVoice       = voice
         speechSpeed         = speed > 0 ? speed : 1.0
         qwen3Model          = Qwen3Model(rawValue: modelRaw) ?? .voiceDesign
         voiceDesignPrompt   = designPrompt
         emotionInstruct     = emotion
+        langCode            = lang
         autoSpeak           = UserDefaults.standard.bool(forKey: "tts.autoSpeak")
         super.init()
 
@@ -175,12 +183,12 @@ class TTSEngine: NSObject, ObservableObject {
     }
 
     func speak(text: String) {
-        let voice    = qwen3Model == .voiceDesign ? Qwen3TTSBridge.defaultVoice : selectedVoice
+        let voice    = qwen3Model.isCustomVoice ? selectedVoice : Qwen3TTSBridge.defaultVoice
         let instruct = qwen3Model == .voiceDesign
             ? (voiceDesignPrompt.isEmpty ? nil : voiceDesignPrompt)
             : (emotionInstruct.isEmpty   ? nil : emotionInstruct)
         bridge.speak(text: text, voice: voice, instruct: instruct,
-                     model: qwen3Model, speed: speechSpeed)
+                     model: qwen3Model, speed: speechSpeed, langCode: langCode)
     }
 
     func stopSpeaking() {
@@ -214,7 +222,7 @@ class TTSEngine: NSObject, ObservableObject {
         return await Qwen3TTSBridge.exportAudio(from: wavURL, to: wavOut)
     }
 
-    var availableVoices: [String] { bridge.availableVoices }
+    var availableVoices: [Qwen3Voice] { bridge.availableVoices }
 
     // MARK: - Pre-synthesis cache (disk-backed, serial)
 
@@ -266,17 +274,19 @@ class TTSEngine: NSObject, ObservableObject {
         synthQueue.removeFirst()
         synthBusy = true
 
-        let voice    = qwen3Model == .voiceDesign ? Qwen3TTSBridge.defaultVoice : selectedVoice
+        let voice    = qwen3Model.isCustomVoice ? selectedVoice : Qwen3TTSBridge.defaultVoice
         let instruct = qwen3Model == .voiceDesign
             ? (voiceDesignPrompt.isEmpty ? nil : voiceDesignPrompt)
             : (emotionInstruct.isEmpty   ? nil : emotionInstruct)
-        let model = qwen3Model
-        let speed = speechSpeed
-        let url   = cacheURL(for: item.id)
+        let model    = qwen3Model
+        let speed    = speechSpeed
+        let lang     = langCode
+        let url      = cacheURL(for: item.id)
 
         Task { @MainActor in
             let data = await bridge.synthesizeToData(text: item.text, voice: voice,
-                                                     instruct: instruct, model: model, speed: speed)
+                                                     instruct: instruct, model: model,
+                                                     speed: speed, langCode: lang)
 
             self.synthBusy = false
             self.synthesizingIds.remove(item.id)

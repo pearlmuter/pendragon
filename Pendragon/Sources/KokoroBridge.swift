@@ -4,32 +4,74 @@ import AVFoundation
 // MARK: - Qwen3 model enum
 
 enum Qwen3Model: String, CaseIterable {
-    case customVoice = "customvoice"
-    case voiceDesign = "voicedesign"
+    case customVoice      = "customvoice"        // 1.7B
+    case customVoiceSmall = "customvoice_small"  // 0.6B — same speakers, faster
+    case voiceDesign      = "voicedesign"        // 1.7B
 
     var displayName: String {
         switch self {
-        case .customVoice: return "Custom Voice"
-        case .voiceDesign: return "Voice Design"
+        case .customVoice:      return "Custom Voice"
+        case .customVoiceSmall: return "Custom Voice"
+        case .voiceDesign:      return "Voice Design"
         }
     }
 
     var subtitle: String {
         switch self {
-        case .customVoice: return "9 preset speakers + emotion instruct"
-        case .voiceDesign: return "Design any voice from a description"
+        case .customVoice:      return "9 speakers · full quality (1.7B)"
+        case .customVoiceSmall: return "9 speakers · faster, lighter (0.6B)"
+        case .voiceDesign:      return "Design any voice from a description"
         }
     }
 
     var modelId: String {
         switch self {
-        case .customVoice: return "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
-        case .voiceDesign: return "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
+        case .customVoice:      return "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
+        case .customVoiceSmall: return "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
+        case .voiceDesign:      return "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
         }
     }
+
+    var isCustomVoice: Bool { self != .voiceDesign }
 }
 
-let qwen3Voices = ["Vivian", "Ryan", "Ethan", "Chelsie", "Serena", "Asel", "Ikaika", "Kaito", "Zofiya"]
+struct Qwen3Voice: Identifiable {
+    let id: String          // key sent to model (model lowercases it for lookup)
+    let displayName: String
+}
+
+let qwen3Voices: [Qwen3Voice] = [
+    Qwen3Voice(id: "vivian",    displayName: "Vivian"),
+    Qwen3Voice(id: "ryan",      displayName: "Ryan"),
+    Qwen3Voice(id: "serena",    displayName: "Serena"),
+    Qwen3Voice(id: "aiden",     displayName: "Aiden"),
+    Qwen3Voice(id: "uncle_fu",  displayName: "Uncle Fu"),
+    Qwen3Voice(id: "ono_anna",  displayName: "Ono Anna"),
+    Qwen3Voice(id: "sohee",     displayName: "Sohee"),
+    Qwen3Voice(id: "eric",      displayName: "Eric"),
+    Qwen3Voice(id: "dylan",     displayName: "Dylan"),
+]
+
+struct Qwen3Language: Identifiable {
+    let id: String
+    let displayName: String
+}
+
+let qwen3Languages: [Qwen3Language] = [
+    Qwen3Language(id: "auto",            displayName: "Auto"),
+    Qwen3Language(id: "english",         displayName: "English"),
+    Qwen3Language(id: "chinese",         displayName: "Chinese"),
+    Qwen3Language(id: "japanese",        displayName: "Japanese"),
+    Qwen3Language(id: "korean",          displayName: "Korean"),
+    Qwen3Language(id: "french",          displayName: "French"),
+    Qwen3Language(id: "spanish",         displayName: "Spanish"),
+    Qwen3Language(id: "german",          displayName: "German"),
+    Qwen3Language(id: "italian",         displayName: "Italian"),
+    Qwen3Language(id: "portuguese",      displayName: "Portuguese"),
+    Qwen3Language(id: "russian",         displayName: "Russian"),
+    Qwen3Language(id: "beijing_dialect", displayName: "Beijing Dialect"),
+    Qwen3Language(id: "sichuan_dialect", displayName: "Sichuan Dialect"),
+]
 
 // MARK: - Qwen3TTSBridge
 //
@@ -48,7 +90,7 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var isPaused  = false
     @Published var loadError: String? = nil
 
-    static let defaultVoice = "Vivian"
+    static let defaultVoice = "vivian"
 
     // MARK: Private
 
@@ -190,7 +232,8 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
     // MARK: Synthesis
 
     func synthesizeToData(text: String, voice: String, instruct: String?,
-                          model: Qwen3Model, speed: Float) async -> Data? {
+                          model: Qwen3Model, speed: Float,
+                          langCode: String = "auto") async -> Data? {
         if process == nil { loadModel(model: model) }
         let clean = Self.stripMarkdown(text)
         guard !clean.isEmpty else { return nil }
@@ -200,13 +243,14 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
             .appendingPathComponent("ptts_\(id)").path  // no .wav — daemon resolves the real path
 
         var req: [String: Any] = [
-            "id":     id,
-            "cmd":    "generate",
-            "model":  model.rawValue,
-            "voice":  voice,
-            "text":   clean,
-            "speed":  Double(speed),
-            "output": tmp + ".wav"
+            "id":        id,
+            "cmd":       "generate",
+            "model":     model.rawValue,
+            "voice":     voice,
+            "text":      clean,
+            "speed":     Double(speed),
+            "lang_code": langCode,
+            "output":    tmp + ".wav"
         ]
         if let instruct, !instruct.isEmpty { req["instruct"] = instruct }
 
@@ -225,11 +269,12 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
 
     func speak(text: String, voice: String, instruct: String?,
-               model: Qwen3Model, speed: Float) {
+               model: Qwen3Model, speed: Float, langCode: String = "auto") {
         stopSpeaking()
         Task {
             if let d = await synthesizeToData(text: text, voice: voice,
-                                              instruct: instruct, model: model, speed: speed) {
+                                              instruct: instruct, model: model,
+                                              speed: speed, langCode: langCode) {
                 await MainActor.run { self.playWAVData(d) }
             }
         }
@@ -295,7 +340,7 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
         ].first { FileManager.default.fileExists(atPath: $0) }
     }
 
-    var availableVoices: [String] { qwen3Voices }
+    var availableVoices: [Qwen3Voice] { qwen3Voices }
 
     nonisolated static func exportAudio(from wavURL: URL, to outputURL: URL) async -> URL? {
         await Task.detached(priority: .userInitiated) {
@@ -340,8 +385,9 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
     from pathlib import Path
 
     MODEL_IDS = {
-        "voicedesign": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
-        "customvoice":  "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+        "voicedesign":       "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+        "customvoice":       "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+        "customvoice_small": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
     }
 
     _gen = None
@@ -364,8 +410,9 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
             text        = text,
             model       = MODEL_IDS.get(model_key, MODEL_IDS["customvoice"]),
             instruct    = req.get("instruct") or None,
-            voice       = req.get("voice", "Vivian"),
+            voice       = req.get("voice", "vivian"),
             speed       = float(req.get("speed", 1.0)),
+            lang_code   = req.get("lang_code", "auto"),
             output_path = output,
             audio_format = "wav",
             save        = True,
