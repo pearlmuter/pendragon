@@ -295,9 +295,16 @@ struct ChatView: View {
     @FocusState private var inputFocused: Bool
     @State private var userHasScrolledUp = true   // auto-follow is opt-in, not default
     @State private var expandedImage: NSImage? = nil
-    @State private var showCapabilities = false
-    @State private var showWebAudio     = false
+    @State private var showCapabilities   = false
     @State private var titleBarWidth: CGFloat = 1000
+
+    // Article-to-audio state
+    enum ArticlePhase { case none, loading, ready, synthesizing }
+    @State private var articlePhase: ArticlePhase = .none
+    @State private var pendingArticle: Article?
+    @State private var articleFetchTask: Task<Void, Never>?
+    @State private var articleSynthTask: Task<Void, Never>?
+    @State private var webAudioMode = false
     /// Translation of the last assistant message, driven by the toolbar button
 
     var body: some View {
@@ -335,14 +342,10 @@ struct ChatView: View {
             .frame(minWidth: 620, idealWidth: 660, minHeight: 480, idealHeight: 560)
             .preferredColorScheme(.dark)
         }
-        .sheet(isPresented: $showWebAudio) {
-            WebpageAudioSheet(ttsEngine: ttsEngine, isPresented: $showWebAudio)
-                .preferredColorScheme(.dark)
-        }
         // Menu-bar Edit > Paste (keyboard Cmd+V is handled by the monitor below)
         .onPasteCommand(of: [.png, .tiff, .jpeg, .fileURL, .pdf, .plainText]) { _ in
             engine.pasteFromClipboard(appendToInput: { text in
-                inputText = (inputText.isEmpty ? "" : inputText + "\n\n") + text
+                handlePastedText(text)
             })
         }
         .onAppear {
@@ -375,7 +378,7 @@ struct ChatView: View {
                     // If nothing special is on the clipboard, fall through so the
                     // text field pastes plain text normally.
                     if engine.pasteFromClipboard(appendToInput: { text in
-                        inputText = (inputText.isEmpty ? "" : inputText + "\n\n") + text
+                        handlePastedText(text)
                     }) {
                         return nil   // consumed
                     }
@@ -486,14 +489,21 @@ struct ChatView: View {
             ) { engine.searchEnabled.toggle() }
 
             ToolbarToggleButton(
-                icon: "headphones",
+                icon: webAudioMode ? "headphones.circle.fill" : "headphones.circle",
                 label: "Web Audio",
-                isActive: showWebAudio,
+                isActive: webAudioMode,
                 activeColor: .indigo,
                 isDisabled: false,
                 compact: compact,
-                help: "Convert a webpage article to audio"
-            ) { showWebAudio = true }
+                help: webAudioMode ? "Web Audio: paste a URL to generate audio" : "Web Audio: turn article into audio"
+            ) {
+                webAudioMode.toggle()
+                if webAudioMode {
+                    inputFocused = true
+                } else {
+                    clearArticle()
+                }
+            }
 
             ToolbarToggleButton(
                 icon: engine.boostEnabled ? "hare.fill" : "hare",
@@ -845,6 +855,10 @@ struct ChatView: View {
                 .background(Theme.surface.opacity(0.6))
             }
 
+            if articlePhase != .none {
+                articleChip
+            }
+
             HStack(alignment: .center, spacing: 8) {
                 Button(action: { browseForMedia() }) {
                     Image(systemName: "paperclip.circle.fill")
@@ -855,7 +869,7 @@ struct ChatView: View {
                 .disabled(engine.isGenerating && engine.isViewingGeneratingThread)
                 .help("Attach image or audio")
 
-                TextField("Message Pendragon…", text: $inputText, axis: .vertical)
+                TextField(webAudioMode ? "Paste a URL…" : "Message Pendragon…", text: $inputText, axis: .vertical)
                     .textFieldStyle(.plain)
                     .font(.system(size: 14))
                     .lineLimit(1...6)
@@ -922,6 +936,132 @@ struct ChatView: View {
             .padding(.bottom, 14)
             .padding(.top, 8)
         }
+    }
+
+    // MARK: - Article-to-audio
+
+    @ViewBuilder
+    private var articleChip: some View {
+        HStack(spacing: 8) {
+            switch articlePhase {
+            case .loading:
+                ProgressView().scaleEffect(0.6).frame(width: 14, height: 14)
+                Text("Fetching article…")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.textSecondary)
+            case .ready:
+                Image(systemName: "doc.text")
+                    .font(.system(size: 11))
+                    .foregroundColor(.indigo)
+                if let a = pendingArticle {
+                    Text("\(a.wordCount) words · ~\(a.estimatedMinutes) min audio")
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.textSecondary)
+                }
+                Spacer()
+                Button(action: startArticleSynth) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "headphones").font(.system(size: 10))
+                        Text("Generate Audio").font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.indigo)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 5).fill(Color.indigo.opacity(0.12)))
+                }
+                .buttonStyle(.borderless)
+                .disabled(!ttsEngine.isReady)
+                Button(action: clearArticle) {
+                    Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
+                        .foregroundColor(Theme.textSecondary)
+                }
+                .buttonStyle(.borderless)
+            case .synthesizing:
+                ProgressView().scaleEffect(0.6).frame(width: 14, height: 14)
+                Text("Generating audio…")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.textSecondary)
+                Spacer()
+                Button("Cancel") {
+                    articleSynthTask?.cancel()
+                    articlePhase = .ready
+                }
+                .font(.system(size: 11))
+                .buttonStyle(.borderless)
+                .foregroundColor(.secondary)
+            default:
+                EmptyView()
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 8)
+        .padding(.bottom, 2)
+    }
+
+    private func handlePastedText(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let isURL = (trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://"))
+                    && !trimmed.contains(" ") && !trimmed.contains("\n")
+        // Fetch article when Web Audio mode is on, or when pasting a bare URL into an empty field
+        if isURL && (webAudioMode || inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
+            fetchArticle(url: trimmed)
+        } else {
+            inputText = (inputText.isEmpty ? "" : inputText + "\n\n") + text
+        }
+    }
+
+    private func fetchArticle(url: String) {
+        articleFetchTask?.cancel()
+        pendingArticle = nil
+        articlePhase   = .loading
+        inputText      = ""
+
+        articleFetchTask = Task {
+            do {
+                let article = try await ArticleReader.fetch(url)
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    pendingArticle = article
+                    inputText      = article.title
+                    articlePhase   = .ready
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    articlePhase = .none
+                    // Fall back to pasting the URL as plain text
+                    inputText = url
+                }
+            }
+        }
+    }
+
+    private func startArticleSynth() {
+        guard let article = pendingArticle else { return }
+        articleSynthTask?.cancel()
+        articlePhase = .synthesizing
+
+        articleSynthTask = Task {
+            if let data = await ttsEngine.synthesizeRaw(text: article.body) {
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    ttsEngine.playRaw(data)
+                    clearArticle()
+                }
+            } else {
+                guard !Task.isCancelled else { return }
+                await MainActor.run { articlePhase = .ready }
+            }
+        }
+    }
+
+    private func clearArticle() {
+        articleFetchTask?.cancel()
+        articleSynthTask?.cancel()
+        let wasTitle = pendingArticle?.title
+        pendingArticle = nil
+        articlePhase   = .none
+        webAudioMode   = false
+        if let t = wasTitle, inputText == t { inputText = "" }
     }
 
     private var canSend: Bool {
