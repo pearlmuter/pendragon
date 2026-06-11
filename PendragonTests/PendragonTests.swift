@@ -121,4 +121,144 @@ final class PendragonTests: XCTestCase {
             XCTAssertGreaterThan(option.kvCacheGB, 0, "\(option.label) reported non-positive RAM")
         }
     }
+
+    // MARK: - KokoroBridge.stripMarkdown
+    // Called via MainActor.run because KokoroBridge is @MainActor.
+
+    func testStripMarkdown_removesInlineCode() async {
+        let result = await MainActor.run { KokoroBridge.stripMarkdown("Use `print()` to debug") }
+        XCTAssertFalse(result.contains("`"))
+        // Inline code content is intentionally stripped (not spoken)
+        XCTAssertTrue(result.contains("Use"))
+        XCTAssertTrue(result.contains("to debug"))
+    }
+
+    func testStripMarkdown_removesCodeFence() async {
+        let input = "Here is code:\n```swift\nlet x = 1\n```\nDone."
+        let result = await MainActor.run { KokoroBridge.stripMarkdown(input) }
+        XCTAssertFalse(result.contains("```"))
+        XCTAssertFalse(result.contains("let x"))
+        XCTAssertTrue(result.contains("Done"))
+    }
+
+    func testStripMarkdown_removesHeadings() async {
+        let input = "## Introduction\nSome text here."
+        let result = await MainActor.run { KokoroBridge.stripMarkdown(input) }
+        XCTAssertFalse(result.contains("#"))
+        XCTAssertTrue(result.contains("Introduction"))
+        XCTAssertTrue(result.contains("Some text here"))
+    }
+
+    func testStripMarkdown_removesBoldAndItalic() async {
+        let input = "This is **bold** and _italic_ text."
+        let result = await MainActor.run { KokoroBridge.stripMarkdown(input) }
+        XCTAssertFalse(result.contains("**"))
+        XCTAssertFalse(result.contains("_italic_"))
+        XCTAssertTrue(result.contains("bold"))
+        XCTAssertTrue(result.contains("italic"))
+    }
+
+    func testStripMarkdown_removesLinks() async {
+        let input = "See [Apple](https://apple.com) for details."
+        let result = await MainActor.run { KokoroBridge.stripMarkdown(input) }
+        XCTAssertFalse(result.contains("https://apple.com"))
+        XCTAssertTrue(result.contains("Apple"))
+    }
+
+    func testStripMarkdown_preservesParagraphBreaks() async {
+        let input = "First paragraph.\n\nSecond paragraph."
+        let result = await MainActor.run { KokoroBridge.stripMarkdown(input) }
+        XCTAssertTrue(result.contains("\n"))
+    }
+
+    func testStripMarkdown_collapsesManyBlankLines() async {
+        let input = "Line one.\n\n\n\nLine two."
+        let result = await MainActor.run { KokoroBridge.stripMarkdown(input) }
+        XCTAssertFalse(result.contains("\n\n\n"))
+    }
+
+    func testStripMarkdown_emptyInputReturnsEmpty() async {
+        let result = await MainActor.run { KokoroBridge.stripMarkdown("") }
+        XCTAssertEqual(result, "")
+    }
+
+    func testStripMarkdown_plainTextUnchanged() async {
+        let input = "Hello, this is plain text with no markdown."
+        let result = await MainActor.run { KokoroBridge.stripMarkdown(input) }
+        XCTAssertEqual(result, input)
+    }
+
+    // MARK: - kokoroVoices catalogue
+
+    func testKokoroVoices_noDuplicateIds() {
+        let ids = kokoroVoices.map(\.id)
+        XCTAssertEqual(ids.count, Set(ids).count, "Duplicate voice IDs found")
+    }
+
+    func testKokoroVoices_noDuplicateDisplayNames() {
+        let names = kokoroVoices.map(\.displayName)
+        XCTAssertEqual(names.count, Set(names).count, "Duplicate display names found")
+    }
+
+    func testKokoroVoices_allIdsHaveValidPrefix() {
+        let validPrefixes = ["af_", "am_", "bf_", "bm_", "jf_", "jm_", "zf_", "zm_"]
+        for v in kokoroVoices {
+            let hasPrefix = validPrefixes.contains { v.id.hasPrefix($0) }
+            XCTAssertTrue(hasPrefix, "\(v.id) has unrecognised prefix")
+        }
+    }
+
+    func testKokoroVoices_allGradesNonEmpty() {
+        for v in kokoroVoices {
+            XCTAssertFalse(v.grade.isEmpty, "\(v.id) has empty grade")
+        }
+    }
+
+    func testKokoroVoices_knownGradesOnly() {
+        let allowed: Set<String> = ["A", "A−", "B−", "C+", "C", "C−"]
+        for v in kokoroVoices {
+            XCTAssertTrue(allowed.contains(v.grade), "\(v.id) has unexpected grade '\(v.grade)'")
+        }
+    }
+
+    func testKokoroVoices_defaultVoiceExistsInCatalogue() {
+        let ids = kokoroVoices.map(\.id)
+        XCTAssertTrue(ids.contains(KokoroBridge.defaultVoice),
+                      "Default voice '\(KokoroBridge.defaultVoice)' not in catalogue")
+    }
+
+    func testKokoroVoices_defaultVoiceIsTopGrade() {
+        let defaultVoice = kokoroVoices.first { $0.id == KokoroBridge.defaultVoice }
+        XCTAssertEqual(defaultVoice?.grade, "A", "Default voice should be grade A")
+    }
+
+    func testKokoroVoices_gradeASortedFirst() {
+        // All grade-A voices must appear before any grade-B or lower voice
+        let gradeOrder = ["A", "A−", "B−", "C+", "C", "C−"]
+        var lastRank = -1
+        for v in kokoroVoices {
+            let rank = gradeOrder.firstIndex(of: v.grade) ?? gradeOrder.count
+            XCTAssertGreaterThanOrEqual(rank, lastRank,
+                "\(v.id) (grade \(v.grade)) appears after a lower-ranked voice")
+            lastRank = rank
+        }
+    }
+
+    func testKokoroVoices_atLeastOneMaleAndOneFemale() {
+        let hasFemale = kokoroVoices.contains { $0.id.contains("f_") }
+        let hasMale   = kokoroVoices.contains { $0.id.contains("m_") }
+        XCTAssertTrue(hasFemale, "No female voices in catalogue")
+        XCTAssertTrue(hasMale,   "No male voices in catalogue")
+    }
+
+    func testKokoroVoices_minimumCount() {
+        XCTAssertGreaterThanOrEqual(kokoroVoices.count, 8, "Fewer voices than expected in catalogue")
+    }
+
+    // MARK: - KokoroVoice identifiable
+
+    func testKokoroVoice_idIsIdentifier() {
+        let v = KokoroVoice(id: "af_heart", displayName: "Heart", grade: "A")
+        XCTAssertEqual(v.id, "af_heart")
+    }
 }

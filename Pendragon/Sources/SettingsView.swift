@@ -122,24 +122,12 @@ private struct VoiceSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // ── Engine status bar ─────────────────────────────────────────
             engineStatusBar
             Divider().opacity(0.4)
 
-            // ── Model picker ──────────────────────────────────────────────
-            modelPicker
-            Divider().opacity(0.4)
-
-            // ── Model-specific content ────────────────────────────────────
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    if ttsEngine.qwen3Model == .voiceDesign {
-                        voiceDesignEditor
-                    } else {
-                        speakerGrid
-                        emotionEditor
-                    }
-                    languagePicker
+                    speakerGrid
                 }
                 .padding(16)
             }
@@ -170,7 +158,7 @@ private struct VoiceSection: View {
                 Circle()
                     .fill(Color.green)
                     .frame(width: 7, height: 7)
-                Text("Qwen3-TTS ready")
+                Text("Kokoro ready")
                     .font(.system(size: 11))
                     .foregroundColor(Theme.textSecondary)
             } else {
@@ -190,57 +178,38 @@ private struct VoiceSection: View {
         .background(Theme.surface.opacity(0.5))
     }
 
-    // MARK: Model picker (Custom Voice / Voice Design)
+    // MARK: Speaker grid
 
-    private var modelPicker: some View {
-        VStack(spacing: 10) {
-            // Top-level: Custom Voice vs Voice Design
-            HStack(spacing: 8) {
-                logicalModelTab(isCustomVoice: true)
-                logicalModelTab(isCustomVoice: false)
-            }
-            // Sub-picker: size, only shown for Custom Voice
-            if ttsEngine.qwen3Model.isCustomVoice {
-                HStack(spacing: 0) {
-                    sizeTab(.customVoiceSmall, label: "Compact  0.6B", detail: "Faster, less RAM")
-                    sizeTab(.customVoice,      label: "Full  1.7B",     detail: "Best quality")
+    private var speakerGrid: some View {
+        settingsGroup("Voice") {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
+                      spacing: 8) {
+                ForEach(kokoroVoices) { v in
+                    speakerCard(v)
                 }
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 8))
-                .overlay(RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.secondary.opacity(0.12), lineWidth: 0.5))
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
     }
 
-    private func logicalModelTab(isCustomVoice: Bool) -> some View {
-        let m: Qwen3Model = isCustomVoice
-            ? (ttsEngine.qwen3Model.isCustomVoice ? ttsEngine.qwen3Model : .customVoice)
-            : .voiceDesign
-        let selected = ttsEngine.qwen3Model.isCustomVoice == isCustomVoice
-        return Button(action: {
-            ttsEngine.qwen3Model = isCustomVoice
-                ? (ttsEngine.qwen3Model.isCustomVoice ? ttsEngine.qwen3Model : .customVoice)
-                : .voiceDesign
-        }) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(m.displayName)
-                    .font(.system(size: 13, weight: .semibold))
+    private func speakerCard(_ v: KokoroVoice) -> some View {
+        let selected = ttsEngine.selectedVoice == v.id
+        return Button(action: { ttsEngine.selectedVoice = v.id }) {
+            VStack(spacing: 2) {
+                Text(v.displayName)
+                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
                     .foregroundColor(selected ? .accentColor : Theme.textPrimary)
-                Text(isCustomVoice ? "9 preset speakers + emotion" : "Design any voice from text")
-                    .font(.system(size: 10))
-                    .foregroundColor(Theme.textSecondary)
+                Text(v.grade)
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .foregroundColor(gradeColor(v.grade).opacity(selected ? 1.0 : 0.75))
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 9)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(selected ? Color.accentColor.opacity(0.13) : Theme.surface)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 9)
+                RoundedRectangle(cornerRadius: 8)
                     .stroke(selected ? Color.accentColor.opacity(0.5)
                             : Color.secondary.opacity(0.12),
                             lineWidth: selected ? 1.5 : 0.5)
@@ -249,175 +218,14 @@ private struct VoiceSection: View {
         .buttonStyle(.plain)
     }
 
-    private func sizeTab(_ model: Qwen3Model, label: String, detail: String) -> some View {
-        let selected = ttsEngine.qwen3Model == model
-        return Button(action: { ttsEngine.qwen3Model = model }) {
-            VStack(spacing: 1) {
-                Text(label)
-                    .font(.system(size: 11, weight: selected ? .semibold : .regular))
-                    .foregroundColor(selected ? .accentColor : Theme.textSecondary)
-                Text(detail)
-                    .font(.system(size: 9))
-                    .foregroundColor(Theme.textSecondary.opacity(0.7))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 7)
-            .background(selected ? Color.accentColor.opacity(0.13) : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 7))
+    private func gradeColor(_ grade: String) -> Color {
+        switch grade {
+        case "A":  return .green
+        case "A−": return Color(red: 0.35, green: 0.75, blue: 0.35)
+        case "B−": return .blue.opacity(0.9)
+        case "C+": return .orange.opacity(0.85)
+        default:   return .secondary
         }
-        .buttonStyle(.plain)
-        .padding(2)
-    }
-
-    // MARK: Voice Design editor
-
-    private var voiceDesignEditor: some View {
-        settingsGroup("Voice Description") {
-            Text("Describe the voice in plain language. The model interprets your description to shape timbre, pace, accent, age, and emotional colour.")
-                .font(.system(size: 11))
-                .foregroundColor(Theme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .lineSpacing(2)
-                .padding(.bottom, 4)
-
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Theme.background)
-                    .overlay(RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.secondary.opacity(0.2), lineWidth: 0.5))
-
-                if ttsEngine.voiceDesignPrompt.isEmpty {
-                    Text("e.g. A warm, deep baritone narrator — measured and unhurried, like a documentary filmmaker reading by firelight. Slightly gravelly.")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.textSecondary.opacity(0.5))
-                        .padding(10)
-                        .allowsHitTesting(false)
-                }
-
-                TextEditor(text: $ttsEngine.voiceDesignPrompt)
-                    .font(.system(size: 12))
-                    .foregroundColor(Theme.textPrimary)
-                    .scrollContentBackground(.hidden)
-                    .frame(minHeight: 80, maxHeight: 140)
-                    .padding(6)
-            }
-
-            InfoRow(icon: "info.circle",
-                    text: "Include emotion in the description itself — e.g. \"…currently speaking with suppressed urgency.\" The description is sent to the model as-is.")
-        }
-    }
-
-    // MARK: Speaker grid (Custom Voice)
-
-    private var speakerGrid: some View {
-        settingsGroup("Speaker") {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())],
-                      spacing: 8) {
-                ForEach(qwen3Voices) { v in
-                    speakerCard(v)
-                }
-            }
-        }
-    }
-
-    private func speakerCard(_ v: Qwen3Voice) -> some View {
-        let selected = ttsEngine.selectedVoice == v.id
-        return Button(action: { ttsEngine.selectedVoice = v.id }) {
-            Text(v.displayName)
-                .font(.system(size: 13, weight: selected ? .semibold : .regular))
-                .foregroundColor(selected ? .accentColor : Theme.textPrimary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 9)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(selected ? Color.accentColor.opacity(0.13) : Theme.surface)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(selected ? Color.accentColor.opacity(0.5)
-                                : Color.secondary.opacity(0.12),
-                                lineWidth: selected ? 1.5 : 0.5)
-                )
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: Emotion / style instruct (Custom Voice only)
-
-    private var emotionEditor: some View {
-        settingsGroup("Emotion / Style") {
-            Text("Optional. Describe the delivery style or emotional tone for this session. Leave empty for natural neutral speech.")
-                .font(.system(size: 11))
-                .foregroundColor(Theme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .lineSpacing(2)
-                .padding(.bottom, 4)
-
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Theme.background)
-                    .overlay(RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.secondary.opacity(0.2), lineWidth: 0.5))
-
-                if ttsEngine.emotionInstruct.isEmpty {
-                    Text("e.g. Speak warmly, as if talking to an old friend. Unhurried and sincere.")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.textSecondary.opacity(0.5))
-                        .padding(10)
-                        .allowsHitTesting(false)
-                }
-
-                TextEditor(text: $ttsEngine.emotionInstruct)
-                    .font(.system(size: 12))
-                    .foregroundColor(Theme.textPrimary)
-                    .scrollContentBackground(.hidden)
-                    .frame(minHeight: 60, maxHeight: 100)
-                    .padding(6)
-            }
-        }
-    }
-
-    // MARK: Language picker
-
-    private var languagePicker: some View {
-        settingsGroup("Output Language") {
-            Text("Hint the model about the language of your text. \"Auto\" works well for English and most common languages, but setting it explicitly can improve pronunciation.")
-                .font(.system(size: 11))
-                .foregroundColor(Theme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .lineSpacing(2)
-                .padding(.bottom, 4)
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()),
-                                 GridItem(.flexible()), GridItem(.flexible())],
-                      spacing: 6) {
-                ForEach(qwen3Languages) { lang in
-                    langChip(lang)
-                }
-            }
-        }
-    }
-
-    private func langChip(_ lang: Qwen3Language) -> some View {
-        let selected = ttsEngine.langCode == lang.id
-        return Button(action: { ttsEngine.langCode = lang.id }) {
-            Text(lang.displayName)
-                .font(.system(size: 11, weight: selected ? .semibold : .regular))
-                .foregroundColor(selected ? .accentColor : Theme.textSecondary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 7)
-                        .fill(selected ? Color.accentColor.opacity(0.13) : Theme.surface)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7)
-                        .stroke(selected ? Color.accentColor.opacity(0.5)
-                                : Color.secondary.opacity(0.12),
-                                lineWidth: selected ? 1.5 : 0.5)
-                )
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: Speed + Preview bar
@@ -475,17 +283,9 @@ private struct VoiceSection: View {
     private func previewVoice() {
         if ttsEngine.isSpeaking { ttsEngine.stopSpeaking(); isPreviewing = false; return }
         isPreviewing = true
-        let sampleText: String
-        switch ttsEngine.qwen3Model {
-        case .voiceDesign:
-            sampleText = "Hello. This is a preview of your designed voice."
-        case .customVoice, .customVoiceSmall:
-            let name = qwen3Voices.first { $0.id == ttsEngine.selectedVoice }?.displayName
-                       ?? ttsEngine.selectedVoice
-            sampleText = "Hello, I'm \(name). This is how I sound."
-        }
-        ttsEngine.speak(text: sampleText)
-        // Reset the previewing spinner once speaking begins
+        let name = kokoroVoices.first { $0.id == ttsEngine.selectedVoice }?.displayName
+                   ?? ttsEngine.selectedVoice
+        ttsEngine.speak(text: "Hello, I'm \(name). This is how I sound.")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { isPreviewing = false }
     }
 }
@@ -605,11 +405,11 @@ private struct GeneralSection: View {
                                 .font(.system(size: 14))
                                 .foregroundColor(ttsEngine.isReady ? .green : .secondary)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Qwen3-TTS 1.7B · MLX Audio")
+                                Text("Kokoro · hexgrad/Kokoro-82M")
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundColor(Theme.textPrimary)
                                 Text(ttsEngine.isReady
-                                     ? "Daemon ready · \(ttsEngine.qwen3Model.displayName) mode"
+                                     ? "Daemon ready · \(ttsEngine.selectedVoice)"
                                      : ttsEngine.isStarting ? "Loading daemon…" : "Not loaded")
                                     .font(.system(size: 11))
                                     .foregroundColor(Theme.textSecondary)
@@ -655,7 +455,7 @@ private struct GeneralSection: View {
                     // ── Language note ────────────────────────────────────────
                     settingsGroup("Language Support") {
                         InfoRow(icon: "globe", text:
-                            "Qwen3-TTS supports 10 languages: English, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Spanish, and Italian.")
+                            "Kokoro is optimised for American English. The pipeline uses misaki for G2P — no espeak-ng dependency.")
                         Divider().opacity(0.4)
                         InfoRow(icon: "textformat.abc", text:
                             "Markdown is stripped before synthesis. Code blocks, URLs, and special symbols are removed so they don't interrupt speech.")
@@ -727,28 +527,24 @@ private struct AboutSection: View {
                         Divider().opacity(0.4)
                         modelInfoRow(label: "Auto-speak",   value: ttsEngine.autoSpeak ? "On" : "Off")
                         Divider().opacity(0.4)
-                        modelInfoRow(label: "TTS mode",     value: ttsEngine.qwen3Model.displayName)
-                        Divider().opacity(0.4)
-                        modelInfoRow(label: "TTS voice",    value: ttsEngine.qwen3Model == .voiceDesign
-                            ? (ttsEngine.voiceDesignPrompt.isEmpty ? "No description set" : "Custom design")
-                            : ttsEngine.selectedVoice)
+                        modelInfoRow(label: "TTS voice",    value: ttsEngine.selectedVoice)
                     }
 
                     settingsGroup("Text-to-Speech") {
-                        modelInfoRow(label: "Engine",   value: "Qwen3-TTS 1.7B")
+                        modelInfoRow(label: "Engine",   value: "Kokoro-82M")
                         Divider().opacity(0.4)
-                        modelInfoRow(label: "Backend",  value: "MLX Audio · Apple Silicon")
+                        modelInfoRow(label: "Backend",  value: "PyTorch · hexgrad/Kokoro-82M")
                         Divider().opacity(0.4)
                         modelInfoRow(label: "License",  value: "Apache 2.0")
                         Divider().opacity(0.4)
-                        modelInfoRow(label: "Output",   value: "24 kHz · WAV · SNAC codec")
+                        modelInfoRow(label: "Output",   value: "24 kHz · WAV")
                         Divider().opacity(0.4)
-                        modelInfoRow(label: "Languages", value: "10 languages incl. EN, ZH, JA, DE, FR")
+                        modelInfoRow(label: "Voices",   value: "9 American English speakers")
                         Divider().opacity(0.4)
                         InfoRow(icon: "info.circle",
-                                text: "Qwen3-TTS runs via a persistent Python daemon (mlx-audio). " +
-                                      "First synthesis per session takes ~5-8 s while the model loads into RAM. " +
-                                      "Subsequent calls take ~3 s. Peak RAM: ~8 GB for the TTS model alone.")
+                                text: "Kokoro runs via a persistent Python daemon. " +
+                                      "First synthesis per session downloads the model (~330 MB) and " +
+                                      "loads it into RAM. Subsequent calls are near-instant.")
                     }
                 }
                 .padding(20)

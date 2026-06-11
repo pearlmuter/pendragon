@@ -1,96 +1,69 @@
 import Foundation
 import AVFoundation
 
-// MARK: - Qwen3 model enum
+// MARK: - Voice catalogue
 
-enum Qwen3Model: String, CaseIterable {
-    case customVoice      = "customvoice"        // 1.7B
-    case customVoiceSmall = "customvoice_small"  // 0.6B — same speakers, faster
-    case voiceDesign      = "voicedesign"        // 1.7B
-
-    var displayName: String {
-        switch self {
-        case .customVoice:      return "Custom Voice"
-        case .customVoiceSmall: return "Custom Voice"
-        case .voiceDesign:      return "Voice Design"
-        }
-    }
-
-    var subtitle: String {
-        switch self {
-        case .customVoice:      return "9 speakers · full quality (1.7B)"
-        case .customVoiceSmall: return "9 speakers · faster, lighter (0.6B)"
-        case .voiceDesign:      return "Design any voice from a description"
-        }
-    }
-
-    var modelId: String {
-        switch self {
-        case .customVoice:      return "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
-        case .customVoiceSmall: return "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
-        case .voiceDesign:      return "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
-        }
-    }
-
-    var isCustomVoice: Bool { self != .voiceDesign }
-}
-
-struct Qwen3Voice: Identifiable {
-    let id: String          // key sent to model (model lowercases it for lookup)
-    let displayName: String
-}
-
-let qwen3Voices: [Qwen3Voice] = [
-    Qwen3Voice(id: "vivian",    displayName: "Vivian"),
-    Qwen3Voice(id: "ryan",      displayName: "Ryan"),
-    Qwen3Voice(id: "serena",    displayName: "Serena"),
-    Qwen3Voice(id: "aiden",     displayName: "Aiden"),
-    Qwen3Voice(id: "uncle_fu",  displayName: "Uncle Fu"),
-    Qwen3Voice(id: "ono_anna",  displayName: "Ono Anna"),
-    Qwen3Voice(id: "sohee",     displayName: "Sohee"),
-    Qwen3Voice(id: "eric",      displayName: "Eric"),
-    Qwen3Voice(id: "dylan",     displayName: "Dylan"),
-]
-
-struct Qwen3Language: Identifiable {
+struct KokoroVoice: Identifiable {
     let id: String
     let displayName: String
+    let grade: String   // "A", "A−", "B−", "C+", "C"
 }
 
-let qwen3Languages: [Qwen3Language] = [
-    Qwen3Language(id: "auto",            displayName: "Auto"),
-    Qwen3Language(id: "english",         displayName: "English"),
-    Qwen3Language(id: "chinese",         displayName: "Chinese"),
-    Qwen3Language(id: "japanese",        displayName: "Japanese"),
-    Qwen3Language(id: "korean",          displayName: "Korean"),
-    Qwen3Language(id: "french",          displayName: "French"),
-    Qwen3Language(id: "spanish",         displayName: "Spanish"),
-    Qwen3Language(id: "german",          displayName: "German"),
-    Qwen3Language(id: "italian",         displayName: "Italian"),
-    Qwen3Language(id: "portuguese",      displayName: "Portuguese"),
-    Qwen3Language(id: "russian",         displayName: "Russian"),
-    Qwen3Language(id: "beijing_dialect", displayName: "Beijing Dialect"),
-    Qwen3Language(id: "sichuan_dialect", displayName: "Sichuan Dialect"),
+let kokoroVoices: [KokoroVoice] = [
+    // ── Grade A ──────────────────────────────────────────────────────────────
+    KokoroVoice(id: "af_heart",   displayName: "Heart",   grade: "A"),
+    KokoroVoice(id: "af_bella",   displayName: "Bella",   grade: "A−"),
+    // ── Grade B ──────────────────────────────────────────────────────────────
+    KokoroVoice(id: "af_nicole",  displayName: "Nicole",  grade: "B−"),
+    KokoroVoice(id: "bf_emma",    displayName: "Emma",    grade: "B−"),
+    // ── Grade C+ ─────────────────────────────────────────────────────────────
+    KokoroVoice(id: "af_sarah",   displayName: "Sarah",   grade: "C+"),
+    KokoroVoice(id: "af_aoede",   displayName: "Aoede",   grade: "C+"),
+    KokoroVoice(id: "af_kore",    displayName: "Kore",    grade: "C+"),
+    KokoroVoice(id: "am_fenrir",  displayName: "Fenrir",  grade: "C+"),
+    KokoroVoice(id: "am_michael", displayName: "Michael", grade: "C+"),
+    KokoroVoice(id: "am_puck",    displayName: "Puck",    grade: "C+"),
+    // ── Grade C ──────────────────────────────────────────────────────────────
+    KokoroVoice(id: "af_nova",    displayName: "Nova",    grade: "C"),
+    KokoroVoice(id: "bm_george",  displayName: "George",  grade: "C"),
+    KokoroVoice(id: "bm_fable",   displayName: "Fable",   grade: "C"),
 ]
 
-// MARK: - Qwen3TTSBridge
+// MARK: - Markdown stripping (free function — no actor isolation, directly testable)
+
+func kokoroStripMarkdown(_ text: String) -> String {
+    var s = text
+    s = s.replacingOccurrences(of: "```[\\s\\S]*?```",        with: "\n", options: .regularExpression)
+    s = s.replacingOccurrences(of: "`[^`]+`",                 with: "",   options: .regularExpression)
+    s = s.replacingOccurrences(of: "(?m)^#{1,6}\\s*",         with: "",   options: .regularExpression)
+    s = s.replacingOccurrences(of: "(?m)^[-*_]{3,}$",         with: "",   options: .regularExpression)
+    s = s.replacingOccurrences(of: "\\*{1,3}([^*]+)\\*{1,3}", with: "$1", options: .regularExpression)
+    s = s.replacingOccurrences(of: "_{1,3}([^_]+)_{1,3}",     with: "$1", options: .regularExpression)
+    s = s.replacingOccurrences(of: "\\[([^\\]]+)\\]\\([^)]+\\)", with: "$1", options: .regularExpression)
+    s = s.replacingOccurrences(of: "[^\\S\\n]+",               with: " ",  options: .regularExpression)
+    s = s.replacingOccurrences(of: "\\n{3,}",                  with: "\n\n", options: .regularExpression)
+    return s.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+// MARK: - KokoroBridge
 //
-// Drives a persistent Python subprocess running qwen3_tts_daemon.py via mlx-audio.
+// Drives a persistent Python subprocess running the Kokoro TTS daemon.
 // Requests and responses are JSON lines over stdin/stdout.
-// The daemon keeps the MLX model in memory between calls — first call ~5-8s, subsequent ~3s.
+// The pipeline keeps the model in memory between calls — first call ~3-5 s
+// (model + voice download), subsequent calls near-instant.
 
 @MainActor
-final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
+final class KokoroBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     // MARK: Published state
 
-    @Published var isReady   = false
-    @Published var isLoading = false
+    @Published var isReady    = false
+    @Published var isLoading  = false
     @Published var isSpeaking = false
-    @Published var isPaused  = false
+    @Published var isPaused   = false
     @Published var loadError: String? = nil
 
-    static let defaultVoice = "vivian"
+    static let defaultVoice = "af_heart"
 
     // MARK: Private
 
@@ -109,9 +82,8 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     // MARK: Model loading
 
-    func loadModel(model: Qwen3Model = .customVoice) {
+    func loadModel() {
         guard process == nil else {
-            // Daemon already running; mark ready immediately
             isLoading = false
             isReady   = true
             return
@@ -123,7 +95,7 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     private func startDaemon() {
         let scriptURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("pendragon_tts_daemon.py")
+            .appendingPathComponent("pendragon_kokoro_daemon.py")
         do {
             try Self.daemonScript.write(to: scriptURL, atomically: true, encoding: .utf8)
         } catch {
@@ -133,7 +105,7 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
 
         guard let python = Self.findPython3() else {
-            loadError = "python3 not found — install Python 3.11 with mlx-audio (pip install mlx-audio)."
+            loadError = "python3 not found — install Python 3.11 with kokoro (pip install kokoro)."
             isLoading = false
             return
         }
@@ -145,7 +117,7 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
         let i = Pipe(), o = Pipe(), e = Pipe()
         p.standardInput  = i
         p.standardOutput = o
-        p.standardError  = e   // stderr goes to system log via print
+        p.standardError  = e
 
         p.terminationHandler = { [weak self] _ in
             Task { @MainActor [weak self] in
@@ -155,7 +127,7 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 self.outPipe = nil
                 self.isReady = false
                 for (_, cont) in self.pending {
-                    cont.resume(throwing: NSError(domain: "Qwen3TTS", code: 99,
+                    cont.resume(throwing: NSError(domain: "KokoroBridge", code: 99,
                         userInfo: [NSLocalizedDescriptionKey: "Daemon terminated unexpectedly"]))
                 }
                 self.pending.removeAll()
@@ -182,6 +154,12 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
         isLoading = false
         isReady   = true
+
+        // Pre-warm the Kokoro pipeline in the background so it's ready before
+        // the first synthesis request. Model load takes ~5-10 s on first run.
+        Task {
+            _ = try? await send(["id": UUID().uuidString, "cmd": "warmup"])
+        }
     }
 
     // MARK: JSON line protocol
@@ -207,19 +185,19 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
             cont.resume(returning: path)
         } else {
             let msg = json["error"] as? String ?? "Unknown TTS error"
-            cont.resume(throwing: NSError(domain: "Qwen3TTS", code: 0,
+            cont.resume(throwing: NSError(domain: "KokoroBridge", code: 0,
                 userInfo: [NSLocalizedDescriptionKey: msg]))
         }
     }
 
     private func send(_ json: [String: Any]) async throws -> String {
         guard let pipe = inPipe else {
-            throw NSError(domain: "Qwen3TTS", code: 1,
+            throw NSError(domain: "KokoroBridge", code: 1,
                 userInfo: [NSLocalizedDescriptionKey: "Daemon not running"])
         }
         guard let data = try? JSONSerialization.data(withJSONObject: json),
               let line = String(data: data, encoding: .utf8) else {
-            throw NSError(domain: "Qwen3TTS", code: 2,
+            throw NSError(domain: "KokoroBridge", code: 2,
                 userInfo: [NSLocalizedDescriptionKey: "JSON encode failed"])
         }
         let id = json["id"] as! String
@@ -231,50 +209,40 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     // MARK: Synthesis
 
-    func synthesizeToData(text: String, voice: String, instruct: String?,
-                          model: Qwen3Model, speed: Float,
-                          langCode: String = "auto") async -> Data? {
-        if process == nil { loadModel(model: model) }
+    func synthesizeToData(text: String, voice: String, speed: Float) async -> Data? {
+        if process == nil { loadModel() }
         let clean = Self.stripMarkdown(text)
         guard !clean.isEmpty else { return nil }
 
         let id  = UUID().uuidString
         let tmp = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ptts_\(id)").path  // no .wav — daemon resolves the real path
+            .appendingPathComponent("ptts_\(id)").path
 
-        var req: [String: Any] = [
-            "id":        id,
-            "cmd":       "generate",
-            "model":     model.rawValue,
-            "voice":     voice,
-            "text":      clean,
-            "speed":     Double(speed),
-            "lang_code": langCode,
-            "output":    tmp + ".wav"
+        let req: [String: Any] = [
+            "id":     id,
+            "cmd":    "generate",
+            "voice":  voice,
+            "text":   clean,
+            "speed":  Double(speed),
+            "output": tmp + ".wav"
         ]
-        if let instruct, !instruct.isEmpty { req["instruct"] = instruct }
 
         do {
             let path = try await send(req)
             let data = try? Data(contentsOf: URL(fileURLWithPath: path))
-            // Clean up temp file
             try? FileManager.default.removeItem(atPath: path)
-            // Also clean up the possible directory
             try? FileManager.default.removeItem(atPath: tmp + ".wav")
             return data
         } catch {
-            print("[Qwen3TTSBridge] \(error.localizedDescription)")
+            print("[KokoroBridge] \(error.localizedDescription)")
             return nil
         }
     }
 
-    func speak(text: String, voice: String, instruct: String?,
-               model: Qwen3Model, speed: Float, langCode: String = "auto") {
+    func speak(text: String, voice: String, speed: Float) {
         stopSpeaking()
         Task {
-            if let d = await synthesizeToData(text: text, voice: voice,
-                                              instruct: instruct, model: model,
-                                              speed: speed, langCode: langCode) {
+            if let d = await synthesizeToData(text: text, voice: voice, speed: speed) {
                 await MainActor.run { self.playWAVData(d) }
             }
         }
@@ -290,17 +258,17 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
             p.delegate = self
             p.prepareToPlay()
             p.play()
-            player    = p
+            player     = p
             isSpeaking = true
         } catch {
-            print("[Qwen3TTSBridge] AVAudioPlayer: \(error)")
+            print("[KokoroBridge] AVAudioPlayer: \(error)")
         }
     }
 
     func stopSpeaking() {
         player?.stop()
         player     = nil
-        isSpeaking  = false
+        isSpeaking = false
         isPaused   = false
     }
 
@@ -340,7 +308,7 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
         ].first { FileManager.default.fileExists(atPath: $0) }
     }
 
-    var availableVoices: [Qwen3Voice] { qwen3Voices }
+    var availableVoices: [KokoroVoice] { kokoroVoices }
 
     nonisolated static func exportAudio(from wavURL: URL, to outputURL: URL) async -> URL? {
         await Task.detached(priority: .userInitiated) {
@@ -364,180 +332,58 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
         return candidate
     }
 
-    static func stripMarkdown(_ text: String) -> String {
-        var s = text
-        // Replace block-level elements with a newline so paragraph structure is preserved
-        s = s.replacingOccurrences(of: "```[\\s\\S]*?```",   with: "\n", options: .regularExpression)
-        s = s.replacingOccurrences(of: "`[^`]+`",            with: "",   options: .regularExpression)
-        s = s.replacingOccurrences(of: "(?m)^#{1,6}\\s*",    with: "",   options: .regularExpression)
-        s = s.replacingOccurrences(of: "(?m)^[-*_]{3,}$",    with: "",   options: .regularExpression)
-        s = s.replacingOccurrences(of: "\\*{1,3}([^*]+)\\*{1,3}", with: "$1", options: .regularExpression)
-        s = s.replacingOccurrences(of: "_{1,3}([^_]+)_{1,3}",     with: "$1", options: .regularExpression)
-        s = s.replacingOccurrences(of: "\\[([^\\]]+)\\]\\([^)]+\\)", with: "$1", options: .regularExpression)
-        // Collapse spaces/tabs within a line but KEEP newlines — the TTS model splits on \n
-        // to process each paragraph as a separate segment. Collapsing to a single space here
-        // was the bug: it merged all paragraphs into one segment, hitting max_tokens mid-text.
-        s = s.replacingOccurrences(of: "[^\\S\\n]+",  with: " ",  options: .regularExpression)
-        s = s.replacingOccurrences(of: "\\n{3,}",     with: "\n\n", options: .regularExpression)
-        return s.trimmingCharacters(in: .whitespacesAndNewlines)
+    nonisolated static func stripMarkdown(_ text: String) -> String {
+        kokoroStripMarkdown(text)
     }
 
     // MARK: - Embedded daemon script
-    // Written to $TMPDIR/pendragon_tts_daemon.py on first launch.
 
     private static let daemonScript = #"""
-    import sys, json, gc
+    import sys, json, os
     from pathlib import Path
 
-    MODEL_IDS = {
-        "voicedesign":       "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
-        "customvoice":       "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-        "customvoice_small": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
-    }
+    # Must be set before kokoro/misaki import so the espeakng dylib finds its data.
+    import espeakng_loader
+    os.environ['ESPEAK_DATA_PATH'] = espeakng_loader.get_data_path()
 
-    _gen = None
+    SAMPLE_RATE = 24000
+    _pipeline   = None
 
-    def get_gen():
-        global _gen
-        if _gen is None:
-            from mlx_audio.tts.generate import generate_audio
-            _gen = generate_audio
-        return _gen
-
-    def _find_wav(output_dir):
-        """Return the WAV path written by mlx-audio into output_dir, or None."""
-        p = Path(output_dir)
-        if not p.is_dir():
-            return str(p) if p.exists() else None
-        joined = p / "audio.wav"
-        if joined.exists():
-            return str(joined)
-        found = sorted(p.glob("audio_*.wav"))
-        return str(found[0]) if found else None
-
-    def _concat_wavs(paths, dest):
-        """Concatenate WAV files in paths into dest using Python wave module."""
-        import wave
-        frames = []
-        params = None
-        for path in paths:
-            with wave.open(path, "rb") as wf:
-                if params is None:
-                    params = wf.getparams()
-                frames.append(wf.readframes(wf.getnframes()))
-        with wave.open(dest, "wb") as wf:
-            wf.setparams(params)
-            for f in frames:
-                wf.writeframes(f)
-
-    def _run_one(text, model_key, req, out_dir, seed=None):
-        """Generate audio for a single text chunk into out_dir.
-
-        seed: when set, resets the MLX PRNG before generation so every chunk
-        starts from the same random state → consistent voice style across chunks.
-        """
-        if seed is not None:
-            import mlx.core as mx
-            mx.random.seed(seed)
-        get_gen()(
-            text         = text,
-            model        = MODEL_IDS.get(model_key, MODEL_IDS["customvoice"]),
-            instruct     = req.get("instruct") or None,
-            voice        = req.get("voice", "vivian"),
-            speed        = float(req.get("speed", 1.0)),
-            lang_code    = req.get("lang_code", "auto"),
-            output_path  = out_dir,
-            audio_format = "wav",
-            join_audio   = True,
-            max_tokens   = 2048,
-            temperature  = 0.4,   # lower than default (0.7) → tighter distribution,
-                                  # less voice drift between chunks
-            save         = True,
-            play         = False,
-            verbose      = False,
-        )
-
-    def _make_chunks(text, max_words=120):
-        """Split text into chunks of at most max_words words on sentence boundaries.
-        Each chunk keeps a comfortable margin below max_tokens (2048 @ 12 Hz ≈ 2.5 min).
-        """
-        import re
-        # First split into paragraphs on real newlines, then into sentences within each.
-        chunks = []
-        for para in text.split("\n"):
-            para = para.strip()
-            if not para:
-                continue
-            words = para.split()
-            if len(words) <= max_words:
-                chunks.append(para)
-                continue
-            # Long paragraph: split on sentence endings
-            sentences = re.split(r'(?<=[.!?])\s+', para)
-            buf, buf_words = [], 0
-            for sent in sentences:
-                sw = len(sent.split())
-                if buf_words + sw > max_words and buf:
-                    chunks.append(" ".join(buf))
-                    buf, buf_words = [sent], sw
-                else:
-                    buf.append(sent)
-                    buf_words += sw
-            if buf:
-                chunks.append(" ".join(buf))
-        return chunks or [text]
+    def get_pipeline():
+        global _pipeline
+        if _pipeline is None:
+            from kokoro import KPipeline
+            _pipeline = KPipeline(lang_code='a', repo_id='hexgrad/Kokoro-82M')
+        return _pipeline
 
     def do_generate(req):
-        import tempfile, shutil
+        import numpy as np
+        import soundfile as sf
+
         output = req.get("output", "")
-        text   = req.get("text",   "").strip()
+        text   = req.get("text", "").strip()
         if not text:
             return {"ok": False, "error": "empty text"}
 
-        model_key = req.get("model", "customvoice")
+        voice = req.get("voice", "af_heart")
+        speed = float(req.get("speed", 1.0))
 
-        # custom_voice and voice_design process the full text as one block —
-        # max_tokens applies globally (not per-paragraph). Split into short
-        # sentence-grouped chunks (~120 words each, ≈60 sec audio) and
-        # concatenate the WAVs so long articles always generate in full.
-        chunks = _make_chunks(text)
+        out_dir = Path(output)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_wav = str(out_dir / "audio.wav")
 
-        Path(output).mkdir(parents=True, exist_ok=True)
-        final_wav = str(Path(output) / "audio.wav")
+        pipeline  = get_pipeline()
+        all_audio = []
+        for result in pipeline(text, voice=voice, speed=speed):
+            if result.audio is not None:
+                all_audio.append(result.audio.numpy())
 
-        if len(chunks) <= 1:
-            _run_one(text, model_key, req, output)
-            wav = _find_wav(output)
-            if wav:
-                return {"ok": True, "path": wav}
-            return {"ok": False, "error": "output file not found after generation"}
+        if not all_audio:
+            return {"ok": False, "error": "no audio generated"}
 
-        # Multi-chunk: same PRNG seed for every chunk so the model starts from
-        # an identical random state each time → consistent voice across the article.
-        CHUNK_SEED = 42
-        tmp_dirs = []
-        wav_paths = []
-        try:
-            for chunk in chunks:
-                tmp = tempfile.mkdtemp()
-                tmp_dirs.append(tmp)
-                _run_one(chunk, model_key, req, tmp, seed=CHUNK_SEED)
-                wav = _find_wav(tmp)
-                if wav:
-                    wav_paths.append(wav)
-
-            if not wav_paths:
-                return {"ok": False, "error": "no audio generated for any chunk"}
-
-            if len(wav_paths) == 1:
-                shutil.copy2(wav_paths[0], final_wav)
-            else:
-                _concat_wavs(wav_paths, final_wav)
-
-            return {"ok": True, "path": final_wav}
-        finally:
-            for d in tmp_dirs:
-                shutil.rmtree(d, ignore_errors=True)
+        audio = np.concatenate(all_audio)
+        sf.write(out_wav, audio, SAMPLE_RATE)
+        return {"ok": True, "path": out_wav}
 
     def main():
         for raw in sys.stdin:
@@ -553,7 +399,8 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
             req_id = req.get("id", "")
             cmd    = req.get("cmd", "generate")
             try:
-                if cmd == "ping":
+                if cmd == "ping" or cmd == "warmup":
+                    get_pipeline()
                     result = {"ok": True}
                 elif cmd == "generate":
                     result = do_generate(req)
