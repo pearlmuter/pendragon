@@ -36,7 +36,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
 @main
 struct PendragonApp: App {
-    static let version = "v0.90025"
+    static let version = "v0.90026"
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var engine    = ChatEngine()

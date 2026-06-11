@@ -203,6 +203,8 @@ class TTSEngine: NSObject, ObservableObject {
                      model: qwen3Model, speed: speechSpeed, langCode: langCode)
     }
 
+    func playRaw(_ data: Data) { bridge.playWAVData(data) }
+
     func stopSpeaking() {
         bridge.stopSpeaking()
         speakingMessageId = nil

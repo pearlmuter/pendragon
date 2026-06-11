@@ -40,7 +40,6 @@
 		A2000007 /* voices.bin in Resources */ = {isa = PBXBuildFile; fileRef = B2000006; };
 		A2000008 /* espeak-ng-data in Resources */ = {isa = PBXBuildFile; fileRef = B2000007; };
 		A1000041 /* ArticleReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000041; };
-		A1000042 /* WebpageAudioSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000042; };
 		A3000001 /* PendragonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000001; };
 		A3000002 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B3000003; };
 /* End PBXBuildFile section */
