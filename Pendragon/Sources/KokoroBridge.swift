@@ -442,11 +442,41 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
             output_path  = out_dir,
             audio_format = "wav",
             join_audio   = True,
-            max_tokens   = 4096,
+            max_tokens   = 2048,
             save         = True,
             play         = False,
             verbose      = False,
         )
+
+    def _make_chunks(text, max_words=120):
+        """Split text into chunks of at most max_words words on sentence boundaries.
+        Each chunk keeps a comfortable margin below max_tokens (2048 @ 12 Hz ≈ 2.5 min).
+        """
+        import re
+        # First split into paragraphs on real newlines, then into sentences within each.
+        chunks = []
+        for para in text.split("\n"):
+            para = para.strip()
+            if not para:
+                continue
+            words = para.split()
+            if len(words) <= max_words:
+                chunks.append(para)
+                continue
+            # Long paragraph: split on sentence endings
+            sentences = re.split(r'(?<=[.!?])\s+', para)
+            buf, buf_words = [], 0
+            for sent in sentences:
+                sw = len(sent.split())
+                if buf_words + sw > max_words and buf:
+                    chunks.append(" ".join(buf))
+                    buf, buf_words = [sent], sw
+                else:
+                    buf.append(sent)
+                    buf_words += sw
+            if buf:
+                chunks.append(" ".join(buf))
+        return chunks or [text]
 
     def do_generate(req):
         import tempfile, shutil
@@ -457,40 +487,39 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
         model_key = req.get("model", "customvoice")
 
-        # custom_voice and voice_design do NOT use split_pattern internally —
-        # max_tokens applies to the full text as one block (~5 min cap at 4096).
-        # We split on newlines here and concatenate the WAVs so long articles
-        # don't get cut off after the first few paragraphs.
-        paragraphs = [p.strip() for p in text.split("\\n") if p.strip()]
+        # custom_voice and voice_design process the full text as one block —
+        # max_tokens applies globally (not per-paragraph). Split into short
+        # sentence-grouped chunks (~120 words each, ≈60 sec audio) and
+        # concatenate the WAVs so long articles always generate in full.
+        chunks = _make_chunks(text)
 
         Path(output).mkdir(parents=True, exist_ok=True)
         final_wav = str(Path(output) / "audio.wav")
 
-        if len(paragraphs) <= 1:
+        if len(chunks) <= 1:
             _run_one(text, model_key, req, output)
             wav = _find_wav(output)
             if wav:
                 return {"ok": True, "path": wav}
             return {"ok": False, "error": "output file not found after generation"}
 
-        # Multi-paragraph: generate each separately, then concatenate
+        # Multi-chunk: generate each separately then concatenate
         tmp_dirs = []
         wav_paths = []
         try:
-            for para in paragraphs:
+            for chunk in chunks:
                 tmp = tempfile.mkdtemp()
                 tmp_dirs.append(tmp)
-                _run_one(para, model_key, req, tmp)
+                _run_one(chunk, model_key, req, tmp)
                 wav = _find_wav(tmp)
                 if wav:
                     wav_paths.append(wav)
 
             if not wav_paths:
-                return {"ok": False, "error": "no audio generated for any paragraph"}
+                return {"ok": False, "error": "no audio generated for any chunk"}
 
             if len(wav_paths) == 1:
-                import shutil as _sh
-                _sh.copy2(wav_paths[0], final_wav)
+                shutil.copy2(wav_paths[0], final_wav)
             else:
                 _concat_wavs(wav_paths, final_wav)
 
