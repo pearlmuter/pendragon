@@ -407,34 +407,40 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
         model_key = req.get("model", "customvoice")
         get_gen()(
-            text        = text,
-            model       = MODEL_IDS.get(model_key, MODEL_IDS["customvoice"]),
-            instruct    = req.get("instruct") or None,
-            voice       = req.get("voice", "vivian"),
-            speed       = float(req.get("speed", 1.0)),
-            lang_code   = req.get("lang_code", "auto"),
-            output_path = output,
+            text         = text,
+            model        = MODEL_IDS.get(model_key, MODEL_IDS["customvoice"]),
+            instruct     = req.get("instruct") or None,
+            voice        = req.get("voice", "vivian"),
+            speed        = float(req.get("speed", 1.0)),
+            lang_code    = req.get("lang_code", "auto"),
+            output_path  = output,
             audio_format = "wav",
-            save        = True,
-            play        = False,
-            verbose     = False,
+            join_audio   = True,   # all segments joined into one file
+            save         = True,
+            play         = False,
+            verbose      = False,
         )
 
-        # mlx-audio creates output/audio_000.wav (treats path as directory prefix)
+        # mlx-audio treats output_path as a directory; with join_audio=True it
+        # writes {output}/audio.wav; without it writes {output}/audio_000.wav etc.
         p = Path(output)
         if p.is_dir():
-            found = sorted(p.glob("audio_*.wav"))
+            joined = p / "audio.wav"          # join_audio=True result
+            if joined.exists():
+                return {"ok": True, "path": str(joined)}
+            found = sorted(p.glob("audio_*.wav"))  # fallback: first segment
             if found:
                 return {"ok": True, "path": str(found[0])}
         elif p.exists():
             return {"ok": True, "path": str(p)}
 
-        # Fallback: directory variant appended to given path
+        # Last resort: directory variant appended to given path
         parent = p.parent
         stem   = p.name.replace(".wav", "")
-        found  = sorted(parent.glob(f"{stem}*/audio_*.wav"))
-        if found:
-            return {"ok": True, "path": str(found[0])}
+        for pat in [f"{stem}*/audio.wav", f"{stem}*/audio_*.wav"]:
+            found = sorted(parent.glob(pat))
+            if found:
+                return {"ok": True, "path": str(found[0])}
 
         return {"ok": False, "error": "output file not found after generation"}
 

@@ -296,6 +296,7 @@ struct ChatView: View {
     @State private var userHasScrolledUp = true   // auto-follow is opt-in, not default
     @State private var expandedImage: NSImage? = nil
     @State private var showCapabilities = false
+    @State private var showWebAudio     = false
     @State private var titleBarWidth: CGFloat = 1000
     /// Translation of the last assistant message, driven by the toolbar button
 
@@ -333,6 +334,10 @@ struct ChatView: View {
             }
             .frame(minWidth: 620, idealWidth: 660, minHeight: 480, idealHeight: 560)
             .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showWebAudio) {
+            WebpageAudioSheet(ttsEngine: ttsEngine, isPresented: $showWebAudio)
+                .preferredColorScheme(.dark)
         }
         // Menu-bar Edit > Paste (keyboard Cmd+V is handled by the monitor below)
         .onPasteCommand(of: [.png, .tiff, .jpeg, .fileURL, .pdf, .plainText]) { _ in
@@ -479,6 +484,16 @@ struct ChatView: View {
                 compact: compact,
                 help: engine.searchEnabled ? "Web search enabled" : "Web search disabled"
             ) { engine.searchEnabled.toggle() }
+
+            ToolbarToggleButton(
+                icon: "headphones",
+                label: "Web Audio",
+                isActive: showWebAudio,
+                activeColor: .indigo,
+                isDisabled: false,
+                compact: compact,
+                help: "Convert a webpage article to audio"
+            ) { showWebAudio = true }
 
             ToolbarToggleButton(
                 icon: engine.boostEnabled ? "hare.fill" : "hare",

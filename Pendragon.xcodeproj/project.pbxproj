@@ -39,6 +39,8 @@
 		A2000010 /* kokoro-v1.0.int8.onnx in Resources */ = {isa = PBXBuildFile; fileRef = B2000009; };
 		A2000007 /* voices.bin in Resources */ = {isa = PBXBuildFile; fileRef = B2000006; };
 		A2000008 /* espeak-ng-data in Resources */ = {isa = PBXBuildFile; fileRef = B2000007; };
+		A1000041 /* ArticleReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000041; };
+		A1000042 /* WebpageAudioSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000042; };
 		A3000001 /* PendragonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000001; };
 		A3000002 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B3000003; };
 /* End PBXBuildFile section */
@@ -66,6 +68,8 @@
 		B1000020 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B1000030 /* TTSEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSEngine.swift; sourceTree = "<group>"; };
 		B1000040 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B1000041 /* ArticleReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleReader.swift; sourceTree = "<group>"; };
+		B1000042 /* WebpageAudioSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebpageAudioSheet.swift; sourceTree = "<group>"; };
 		B1000031 /* kokoro_server.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = kokoro_server.py; sourceTree = "<group>"; };
 		B2000001 /* KokoroTTS.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = KokoroTTS.cpp; path = "$(PROJECT_DIR)/KokoroKit/src/KokoroTTS.cpp"; sourceTree = "<absolute>"; };
 		B2000002 /* KokoroBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KokoroBridge.swift; sourceTree = "<group>"; };
@@ -194,6 +198,8 @@
 				B1000008 /* VisualizationWindow.swift */,
 				B1000030 /* TTSEngine.swift */,
 				B1000040 /* SettingsView.swift */,
+				B1000041 /* ArticleReader.swift */,
+				B1000042 /* WebpageAudioSheet.swift */,
 				B2000002 /* KokoroBridge.swift */,
 				B2000001 /* KokoroTTS.cpp */,
 			);
@@ -312,6 +318,8 @@
 				A1000008 /* VisualizationWindow.swift in Sources */,
 				A1000030 /* TTSEngine.swift in Sources */,
 				A1000040 /* SettingsView.swift in Sources */,
+				A1000041 /* ArticleReader.swift in Sources */,
+				A1000042 /* WebpageAudioSheet.swift in Sources */,
 				A2000002 /* KokoroBridge.swift in Sources */,
 				A2000001 /* KokoroTTS.cpp in Sources */,
 			);

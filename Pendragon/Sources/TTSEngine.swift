@@ -182,6 +182,18 @@ class TTSEngine: NSObject, ObservableObject {
         }
     }
 
+    /// Synthesise arbitrary text with current settings and return raw WAV data.
+    /// Used by WebpageAudioSheet; does not touch the chat synthesis queue.
+    func synthesizeRaw(text: String) async -> Data? {
+        let voice    = qwen3Model.isCustomVoice ? selectedVoice : Qwen3TTSBridge.defaultVoice
+        let instruct = qwen3Model == .voiceDesign
+            ? (voiceDesignPrompt.isEmpty ? nil : voiceDesignPrompt)
+            : (emotionInstruct.isEmpty   ? nil : emotionInstruct)
+        return await bridge.synthesizeToData(
+            text: text, voice: voice, instruct: instruct,
+            model: qwen3Model, speed: speechSpeed, langCode: langCode)
+    }
+
     func speak(text: String) {
         let voice    = qwen3Model.isCustomVoice ? selectedVoice : Qwen3TTSBridge.defaultVoice
         let instruct = qwen3Model == .voiceDesign
