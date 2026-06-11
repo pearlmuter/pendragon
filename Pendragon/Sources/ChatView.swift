@@ -1081,6 +1081,23 @@ struct ChatView: View {
 
     private func sendMessage() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Web Audio mode: intercept entirely — never send to the LLM
+        if webAudioMode {
+            switch articlePhase {
+            case .ready:
+                startArticleSynth()
+            case .none:
+                // Treat whatever is in the field as a URL to fetch
+                let isURL = (text.hasPrefix("http://") || text.hasPrefix("https://"))
+                            && !text.contains(" ") && !text.contains("\n")
+                if isURL { fetchArticle(url: text) }
+            default:
+                break   // loading or synthesizing — ignore extra taps
+            }
+            return
+        }
+
         // Stop button: only if viewing the generating thread with an empty input
         if engine.isGenerating && engine.isViewingGeneratingThread &&
            text.isEmpty && engine.pendingImages.isEmpty && engine.pendingAudioSamples == nil {
