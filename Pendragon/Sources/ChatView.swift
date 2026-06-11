@@ -958,17 +958,6 @@ struct ChatView: View {
                         .foregroundColor(Theme.textSecondary)
                 }
                 Spacer()
-                Button(action: startArticleSynth) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "headphones").font(.system(size: 10))
-                        Text("Generate Audio").font(.system(size: 11, weight: .medium))
-                    }
-                    .foregroundColor(.indigo)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 5).fill(Color.indigo.opacity(0.12)))
-                }
-                .buttonStyle(.borderless)
-                .disabled(!ttsEngine.isReady)
                 Button(action: clearArticle) {
                     Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
                         .foregroundColor(Theme.textSecondary)
