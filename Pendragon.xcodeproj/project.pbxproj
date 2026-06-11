@@ -39,6 +39,8 @@
 		A2000010 /* kokoro-v1.0.int8.onnx in Resources */ = {isa = PBXBuildFile; fileRef = B2000009; };
 		A2000007 /* voices.bin in Resources */ = {isa = PBXBuildFile; fileRef = B2000006; };
 		A2000008 /* espeak-ng-data in Resources */ = {isa = PBXBuildFile; fileRef = B2000007; };
+		A3000001 /* PendragonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3000001; };
+		A3000002 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B3000003; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -74,6 +76,9 @@
 		B2000009 /* kokoro-v1.0.int8.onnx */ = {isa = PBXFileReference; lastKnownFileType = file; name = "kokoro-v1.0.int8.onnx"; path = "$(PROJECT_DIR)/kokoro/kokoro-v1.0.int8.onnx"; sourceTree = "<absolute>"; };
 		B2000006 /* voices.bin */ = {isa = PBXFileReference; lastKnownFileType = file; name = voices.bin; path = "$(PROJECT_DIR)/kokoro/voices.bin"; sourceTree = "<absolute>"; };
 		B2000007 /* espeak-ng-data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "espeak-ng-data"; sourceTree = "<group>"; };
+		B3000001 /* PendragonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendragonTests.swift; sourceTree = "<group>"; };
+		B3000002 /* PendragonTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PendragonTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B3000003 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -110,6 +115,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C3000001 /* Frameworks (Tests) */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A3000002 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -117,6 +130,7 @@
 			isa = PBXGroup;
 			children = (
 				D1000002 /* Pendragon */,
+				D3000001 /* PendragonTests */,
 				D1000003 /* Frameworks */,
 				D1000004 /* Products */,
 			);
@@ -129,6 +143,14 @@
 				D1000006 /* Resources */,
 			);
 			path = Pendragon;
+			sourceTree = "<group>";
+		};
+		D3000001 /* PendragonTests */ = {
+			isa = PBXGroup;
+			children = (
+				B3000001 /* PendragonTests.swift */,
+			);
+			path = PendragonTests;
 			sourceTree = "<group>";
 		};
 		D1000003 /* Frameworks */ = {
@@ -154,6 +176,7 @@
 			isa = PBXGroup;
 			children = (
 				B1000000 /* Pendragon.app */,
+				B3000002 /* PendragonTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -212,6 +235,22 @@
 			productReference = B1000000 /* Pendragon.app */;
 			productType = "com.apple.product-type.application";
 		};
+		E3000001 /* PendragonTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F3000001;
+			buildPhases = (
+				C3000002 /* Sources (Tests) */,
+				C3000001 /* Frameworks (Tests) */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PendragonTests;
+			productName = PendragonTests;
+			productReference = B3000002 /* PendragonTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -236,6 +275,7 @@
 			projectRoot = "";
 			targets = (
 				E1000001 /* Pendragon */,
+				E3000001 /* PendragonTests */,
 			);
 		};
 /* End PBXProject section */
@@ -274,6 +314,14 @@
 				A1000040 /* SettingsView.swift in Sources */,
 				A2000002 /* KokoroBridge.swift in Sources */,
 				A2000001 /* KokoroTTS.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C3000002 /* Sources (Tests) */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A3000001 /* PendragonTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -433,6 +481,52 @@
 			};
 			name = Release;
 		};
+		G3000001 /* Debug (Tests) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/KokoroKit/include",
+					"$(PROJECT_DIR)/kokoro/onnxruntime-osx-arm64-1.26.0/include",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.pendragon.app.PendragonTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				SWIFT_INCLUDE_PATHS = (
+					"$(PROJECT_DIR)/LlamaKit/include",
+					"$(PROJECT_DIR)/KokoroKit/include",
+				);
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pendragon.app/Contents/MacOS/Pendragon";
+			};
+			name = Debug;
+		};
+		G3000002 /* Release (Tests) */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(PROJECT_DIR)/KokoroKit/include",
+					"$(PROJECT_DIR)/kokoro/onnxruntime-osx-arm64-1.26.0/include",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.pendragon.app.PendragonTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				SWIFT_INCLUDE_PATHS = (
+					"$(PROJECT_DIR)/LlamaKit/include",
+					"$(PROJECT_DIR)/KokoroKit/include",
+				);
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Pendragon.app/Contents/MacOS/Pendragon";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -450,6 +544,15 @@
 			buildConfigurations = (
 				G1000003 /* Debug */,
 				G1000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F3000001 /* Build configuration list for PBXNativeTarget "PendragonTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				G3000001 /* Debug */,
+				G3000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

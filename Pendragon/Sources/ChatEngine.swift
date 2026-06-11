@@ -908,7 +908,7 @@ class ChatEngine: ObservableObject {
     }
 
     /// Extract the user-visible text from raw model output, stripping thinking and tool tokens
-    private nonisolated static func extractVisibleText(from raw: String, thinkingEnabled: Bool) -> String {
+    nonisolated static func extractVisibleText(from raw: String, thinkingEnabled: Bool) -> String {
         var text = raw
 
         // Strip thinking block: everything from start up to and including <channel|>
@@ -1255,7 +1255,7 @@ class ChatEngine: ObservableObject {
 
     // MARK: - Calendar Tool
 
-    private struct CalendarEventParams: Sendable {
+    struct CalendarEventParams: Sendable {
         let title: String
         let startDate: String
         let endDate: String?
@@ -1263,7 +1263,7 @@ class ChatEngine: ObservableObject {
         let notes: String?
     }
 
-    private nonisolated static func extractCalendarEventCall(from rawOutput: String) -> CalendarEventParams? {
+    nonisolated static func extractCalendarEventCall(from rawOutput: String) -> CalendarEventParams? {
         guard rawOutput.contains("create_calendar_event") else { return nil }
 
         func extractField(_ field: String) -> String? {
@@ -1807,7 +1807,7 @@ class ChatEngine: ObservableObject {
         return nil
     }
 
-    private nonisolated static func extractSearchQuery(from rawOutput: String) -> String? {
+    nonisolated static func extractSearchQuery(from rawOutput: String) -> String? {
         // Try multiple patterns the model might use (official format first)
         let patterns = [
             #"call:web_search\s*\{\s*query\s*:\s*<\|"\|>(.*?)<\|"\|>"#,
