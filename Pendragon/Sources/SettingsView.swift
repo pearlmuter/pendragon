@@ -966,6 +966,20 @@ private struct AboutSection: View {
                                 text: "All inference runs entirely on-device. No data is sent to any server.")
                     }
 
+                    settingsGroup("Active Settings") {
+                        modelInfoRow(label: "Version",      value: PendragonApp.version)
+                        Divider().opacity(0.4)
+                        modelInfoRow(label: "Context size", value: "\(engine.contextSizeOption.label) (\(engine.contextSizeOption.rawValue) tokens)")
+                        Divider().opacity(0.4)
+                        modelInfoRow(label: "Boost",        value: engine.boostEnabled ? "On" : "Off (quiet)")
+                        Divider().opacity(0.4)
+                        modelInfoRow(label: "Thinking",     value: engine.thinkingEnabled ? "On" : "Off")
+                        Divider().opacity(0.4)
+                        modelInfoRow(label: "Auto-speak",   value: ttsEngine.autoSpeak ? "On" : "Off")
+                        Divider().opacity(0.4)
+                        modelInfoRow(label: "TTS voice",    value: ttsEngine.selectedVoice)
+                    }
+
                     settingsGroup("Text-to-Speech") {
                         modelInfoRow(label: "Engine", value: "Kokoro v1.0")
                         Divider().opacity(0.4)

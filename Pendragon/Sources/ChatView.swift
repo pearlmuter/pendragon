@@ -400,7 +400,7 @@ struct ChatView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .fixedSize()
                 if !hideVersion {
-                    Text("v0.90024")
+                    Text(PendragonApp.version)
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundColor(.secondary.opacity(0.5))
                         .fixedSize()
