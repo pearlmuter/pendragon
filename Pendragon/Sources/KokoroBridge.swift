@@ -430,8 +430,15 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
             for f in frames:
                 wf.writeframes(f)
 
-    def _run_one(text, model_key, req, out_dir):
-        """Generate audio for a single text chunk into out_dir."""
+    def _run_one(text, model_key, req, out_dir, seed=None):
+        """Generate audio for a single text chunk into out_dir.
+
+        seed: when set, resets the MLX PRNG before generation so every chunk
+        starts from the same random state → consistent voice style across chunks.
+        """
+        if seed is not None:
+            import mlx.core as mx
+            mx.random.seed(seed)
         get_gen()(
             text         = text,
             model        = MODEL_IDS.get(model_key, MODEL_IDS["customvoice"]),
@@ -443,6 +450,8 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
             audio_format = "wav",
             join_audio   = True,
             max_tokens   = 2048,
+            temperature  = 0.4,   # lower than default (0.7) → tighter distribution,
+                                  # less voice drift between chunks
             save         = True,
             play         = False,
             verbose      = False,
@@ -503,14 +512,16 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 return {"ok": True, "path": wav}
             return {"ok": False, "error": "output file not found after generation"}
 
-        # Multi-chunk: generate each separately then concatenate
+        # Multi-chunk: same PRNG seed for every chunk so the model starts from
+        # an identical random state each time → consistent voice across the article.
+        CHUNK_SEED = 42
         tmp_dirs = []
         wav_paths = []
         try:
             for chunk in chunks:
                 tmp = tempfile.mkdtemp()
                 tmp_dirs.append(tmp)
-                _run_one(chunk, model_key, req, tmp)
+                _run_one(chunk, model_key, req, tmp, seed=CHUNK_SEED)
                 wav = _find_wav(tmp)
                 if wav:
                     wav_paths.append(wav)
