@@ -366,14 +366,19 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     static func stripMarkdown(_ text: String) -> String {
         var s = text
-        s = s.replacingOccurrences(of: "```[\\s\\S]*?```", with: " ", options: .regularExpression)
-        s = s.replacingOccurrences(of: "`[^`]+`",          with: " ", options: .regularExpression)
-        s = s.replacingOccurrences(of: "(?m)^#{1,6}\\s*",  with: "",  options: .regularExpression)
+        // Replace block-level elements with a newline so paragraph structure is preserved
+        s = s.replacingOccurrences(of: "```[\\s\\S]*?```",   with: "\n", options: .regularExpression)
+        s = s.replacingOccurrences(of: "`[^`]+`",            with: "",   options: .regularExpression)
+        s = s.replacingOccurrences(of: "(?m)^#{1,6}\\s*",    with: "",   options: .regularExpression)
+        s = s.replacingOccurrences(of: "(?m)^[-*_]{3,}$",    with: "",   options: .regularExpression)
         s = s.replacingOccurrences(of: "\\*{1,3}([^*]+)\\*{1,3}", with: "$1", options: .regularExpression)
         s = s.replacingOccurrences(of: "_{1,3}([^_]+)_{1,3}",     with: "$1", options: .regularExpression)
         s = s.replacingOccurrences(of: "\\[([^\\]]+)\\]\\([^)]+\\)", with: "$1", options: .regularExpression)
-        s = s.replacingOccurrences(of: "(?m)^[-*_]{3,}$", with: "",  options: .regularExpression)
-        s = s.replacingOccurrences(of: "\\s+",            with: " ",  options: .regularExpression)
+        // Collapse spaces/tabs within a line but KEEP newlines — the TTS model splits on \n
+        // to process each paragraph as a separate segment. Collapsing to a single space here
+        // was the bug: it merged all paragraphs into one segment, hitting max_tokens mid-text.
+        s = s.replacingOccurrences(of: "[^\\S\\n]+",  with: " ",  options: .regularExpression)
+        s = s.replacingOccurrences(of: "\\n{3,}",     with: "\n\n", options: .regularExpression)
         return s.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -416,6 +421,7 @@ final class Qwen3TTSBridge: NSObject, ObservableObject, AVAudioPlayerDelegate {
             output_path  = output,
             audio_format = "wav",
             join_audio   = True,   # all segments joined into one file
+            max_tokens   = 4096,   # default 1200 cuts off long paragraphs
             save         = True,
             play         = False,
             verbose      = False,
