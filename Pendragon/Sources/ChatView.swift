@@ -299,11 +299,10 @@ struct ChatView: View {
     @State private var titleBarWidth: CGFloat = 1000
 
     // Article-to-audio state
-    enum ArticlePhase { case none, loading, ready, synthesizing }
+    enum ArticlePhase { case none, loading, ready }
     @State private var articlePhase: ArticlePhase = .none
     @State private var pendingArticle: Article?
     @State private var articleFetchTask: Task<Void, Never>?
-    @State private var articleSynthTask: Task<Void, Never>?
     @State private var webAudioMode = false
     /// Translation of the last assistant message, driven by the toolbar button
 
@@ -583,11 +582,11 @@ struct ChatView: View {
                                         // Cached → play immediately.
                                         // Not cached → just synthesise; user taps Listen to play.
                                         if ttsEngine.cachedIds.contains(message.id) {
-                                            ttsEngine.play(messageId: message.id, text: message.content)
+                                            ttsEngine.play(messageId: message.id, text: message.ttsContent)
                                         } else {
                                             ttsEngine.synthesizeBackground(
                                                 messageId: message.id,
-                                                text: message.content,
+                                                text: message.ttsContent,
                                                 autoPlay: false
                                             )
                                         }
@@ -677,7 +676,7 @@ struct ChatView: View {
                         let isNewest = i == recent.count - 1
                         ttsEngine.synthesizeBackground(
                             messageId: msg.id,
-                            text: msg.content,
+                            text: msg.ttsContent,
                             autoPlay: isNewest && ttsEngine.autoSpeak
                         )
                     }
@@ -975,19 +974,6 @@ struct ChatView: View {
                         .foregroundColor(Theme.textSecondary)
                 }
                 .buttonStyle(.borderless)
-            case .synthesizing:
-                ProgressView().scaleEffect(0.6).frame(width: 14, height: 14)
-                Text("Generating audio…")
-                    .font(.system(size: 11))
-                    .foregroundColor(Theme.textSecondary)
-                Spacer()
-                Button("Cancel") {
-                    articleSynthTask?.cancel()
-                    articlePhase = .ready
-                }
-                .font(.system(size: 11))
-                .buttonStyle(.borderless)
-                .foregroundColor(.secondary)
             default:
                 EmptyView()
             }
@@ -1037,26 +1023,15 @@ struct ChatView: View {
 
     private func startArticleSynth() {
         guard let article = pendingArticle else { return }
-        articleSynthTask?.cancel()
-        articlePhase = .synthesizing
-
-        articleSynthTask = Task {
-            if let data = await ttsEngine.synthesizeRaw(text: article.body) {
-                guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    ttsEngine.playRaw(data)
-                    clearArticle()
-                }
-            } else {
-                guard !Task.isCancelled else { return }
-                await MainActor.run { articlePhase = .ready }
-            }
-        }
+        // Inject headline + article body into the chat as a real message pair,
+        // then kick off background synthesis so the full playback UI appears.
+        let msgId = engine.injectWebArticle(headline: article.title, articleBody: article.body)
+        ttsEngine.synthesizeBackground(messageId: msgId, text: article.body, autoPlay: true)
+        clearArticle()
     }
 
     private func clearArticle() {
         articleFetchTask?.cancel()
-        articleSynthTask?.cancel()
         let wasTitle = pendingArticle?.title
         pendingArticle = nil
         articlePhase   = .none
@@ -1092,8 +1067,8 @@ struct ChatView: View {
                 let isURL = (text.hasPrefix("http://") || text.hasPrefix("https://"))
                             && !text.contains(" ") && !text.contains("\n")
                 if isURL { fetchArticle(url: text) }
-            default:
-                break   // loading or synthesizing — ignore extra taps
+            case .loading:
+                break   // still fetching — ignore extra taps
             }
             return
         }

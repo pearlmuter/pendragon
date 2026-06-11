@@ -17,14 +17,21 @@ struct ChatMessage: Identifiable {
     var sourceURLs: [(title: String, url: String)]
     var hasVisualization: Bool
     var visualizationCode: String?
+    /// When set, TTS synthesizes this text instead of `content`.
+    /// Used for web-article messages where the bubble shows the headline
+    /// but the audio is the full article body.
+    var ttsOverride: String?
     let timestamp: Date
+
+    /// The text that should be synthesized for this message.
+    var ttsContent: String { ttsOverride ?? content }
 
     enum Role {
         case user
         case assistant
     }
 
-    init(id: UUID = UUID(), role: Role, content: String, images: [NSImage] = [], imageDatas: [Data] = [], hasAudio: Bool = false, audioDuration: TimeInterval? = nil, pdfName: String? = nil, pdfText: String? = nil, pdfThumbnail: NSImage? = nil, usedWebSearch: Bool = false, fetchedURL: String? = nil, sourceURLs: [(title: String, url: String)] = [], hasVisualization: Bool = false, visualizationCode: String? = nil) {
+    init(id: UUID = UUID(), role: Role, content: String, images: [NSImage] = [], imageDatas: [Data] = [], hasAudio: Bool = false, audioDuration: TimeInterval? = nil, pdfName: String? = nil, pdfText: String? = nil, pdfThumbnail: NSImage? = nil, usedWebSearch: Bool = false, fetchedURL: String? = nil, sourceURLs: [(title: String, url: String)] = [], hasVisualization: Bool = false, visualizationCode: String? = nil, ttsOverride: String? = nil) {
         self.id = id
         self.role = role
         self.content = content
@@ -40,6 +47,7 @@ struct ChatMessage: Identifiable {
         self.sourceURLs = sourceURLs
         self.hasVisualization = hasVisualization
         self.visualizationCode = visualizationCode
+        self.ttsOverride = ttsOverride
         self.timestamp = Date()
     }
 }

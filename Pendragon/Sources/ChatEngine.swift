@@ -537,6 +537,22 @@ class ChatEngine: ObservableObject {
         return []
     }
 
+    // MARK: - Web Article Inject
+
+    /// Adds a user message (headline) + assistant message (headline as display,
+    /// article body as TTS) without invoking the LLM. Returns the assistant UUID
+    /// so the caller can kick off background synthesis.
+    @discardableResult
+    func injectWebArticle(headline: String, articleBody: String) -> UUID {
+        let tid = currentThreadId ?? UUID()
+        if currentThreadId == nil { currentThreadId = tid }
+        messages.append(ChatMessage(role: .user, content: headline))
+        let assistantId = UUID()
+        messages.append(ChatMessage(id: assistantId, role: .assistant,
+                                    content: headline, ttsOverride: articleBody))
+        return assistantId
+    }
+
     // MARK: - Send
 
     func send(_ text: String) {
