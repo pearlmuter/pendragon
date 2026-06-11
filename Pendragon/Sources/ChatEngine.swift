@@ -543,10 +543,10 @@ class ChatEngine: ObservableObject {
     /// article body as TTS) without invoking the LLM. Returns the assistant UUID
     /// so the caller can kick off background synthesis.
     @discardableResult
-    func injectWebArticle(headline: String, articleBody: String) -> UUID {
+    func injectWebArticle(url: String, headline: String, articleBody: String) -> UUID {
         let tid = currentThreadId ?? UUID()
         if currentThreadId == nil { currentThreadId = tid }
-        messages.append(ChatMessage(role: .user, content: headline))
+        messages.append(ChatMessage(role: .user, content: url))
         let assistantId = UUID()
         messages.append(ChatMessage(id: assistantId, role: .assistant,
                                     content: headline, ttsOverride: articleBody))

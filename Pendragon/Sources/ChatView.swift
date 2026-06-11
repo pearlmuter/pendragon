@@ -302,6 +302,7 @@ struct ChatView: View {
     enum ArticlePhase { case none, loading, ready }
     @State private var articlePhase: ArticlePhase = .none
     @State private var pendingArticle: Article?
+    @State private var pendingArticleURL = ""
     @State private var articleFetchTask: Task<Void, Never>?
     @State private var webAudioMode = false
     /// Translation of the last assistant message, driven by the toolbar button
@@ -661,6 +662,10 @@ struct ChatView: View {
                     }
                 }
                 .onChange(of: engine.currentThreadId) { _ in }
+                // Auto-inject web article as soon as fetch completes — skip the "ready" chip
+                .onChange(of: articlePhase) { phase in
+                    if phase == .ready && webAudioMode { startArticleSynth() }
+                }
                 // Pre-synthesise audio after each generation.
                 // We look at the last 5 assistant messages each time isGenerating
                 // goes false — this catches cases where two quick generations cause
@@ -948,21 +953,6 @@ struct ChatView: View {
                 Text("Fetching article…")
                     .font(.system(size: 11))
                     .foregroundColor(Theme.textSecondary)
-            case .ready:
-                Image(systemName: "doc.text")
-                    .font(.system(size: 11))
-                    .foregroundColor(.indigo)
-                if let a = pendingArticle {
-                    Text("\(a.wordCount) words · ~\(a.estimatedMinutes) min audio")
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.textSecondary)
-                }
-                Spacer()
-                Button(action: clearArticle) {
-                    Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
-                        .foregroundColor(Theme.textSecondary)
-                }
-                .buttonStyle(.borderless)
             default:
                 EmptyView()
             }
@@ -973,22 +963,16 @@ struct ChatView: View {
     }
 
     private func handlePastedText(_ text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let isURL = (trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://"))
-                    && !trimmed.contains(" ") && !trimmed.contains("\n")
-        // Fetch article when Web Audio mode is on, or when pasting a bare URL into an empty field
-        if isURL && (webAudioMode || inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
-            fetchArticle(url: trimmed)
-        } else {
-            inputText = (inputText.isEmpty ? "" : inputText + "\n\n") + text
-        }
+        // In Web Audio mode, paste just fills the field — send triggers the fetch
+        inputText = (inputText.isEmpty ? "" : inputText + "\n\n") + text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func fetchArticle(url: String) {
         articleFetchTask?.cancel()
-        pendingArticle = nil
-        articlePhase   = .loading
-        inputText      = ""
+        pendingArticle    = nil
+        pendingArticleURL = url
+        articlePhase      = .loading
+        inputText         = ""
 
         articleFetchTask = Task {
             do {
@@ -996,15 +980,13 @@ struct ChatView: View {
                 guard !Task.isCancelled else { return }
                 await MainActor.run {
                     pendingArticle = article
-                    inputText      = article.title
-                    articlePhase   = .ready
+                    articlePhase   = .ready   // onChange auto-triggers startArticleSynth
                 }
             } catch {
                 guard !Task.isCancelled else { return }
                 await MainActor.run {
                     articlePhase = .none
-                    // Fall back to pasting the URL as plain text
-                    inputText = url
+                    inputText    = url   // restore URL on failure
                 }
             }
         }
@@ -1012,20 +994,19 @@ struct ChatView: View {
 
     private func startArticleSynth() {
         guard let article = pendingArticle else { return }
-        // Inject headline + article body into the chat as a real message pair,
-        // then kick off background synthesis so the full playback UI appears.
-        let msgId = engine.injectWebArticle(headline: article.title, articleBody: article.body)
-        ttsEngine.synthesizeBackground(messageId: msgId, text: article.body, autoPlay: true)
+        let url   = pendingArticleURL
+        let msgId = engine.injectWebArticle(url: url, headline: article.title, articleBody: article.body)
+        ttsEngine.synthesizeBackground(messageId: msgId, text: article.body, autoPlay: false)
         clearArticle()
     }
 
     private func clearArticle() {
         articleFetchTask?.cancel()
-        let wasTitle = pendingArticle?.title
-        pendingArticle = nil
-        articlePhase   = .none
-        webAudioMode   = false
-        if let t = wasTitle, inputText == t { inputText = "" }
+        pendingArticle    = nil
+        pendingArticleURL = ""
+        articlePhase      = .none
+        webAudioMode      = false
+        inputText         = ""
     }
 
     private var canSend: Bool {
@@ -1048,17 +1029,12 @@ struct ChatView: View {
 
         // Web Audio mode: intercept entirely — never send to the LLM
         if webAudioMode {
-            switch articlePhase {
-            case .ready:
-                startArticleSynth()
-            case .none:
-                // Treat whatever is in the field as a URL to fetch
+            if articlePhase == .none {
                 let isURL = (text.hasPrefix("http://") || text.hasPrefix("https://"))
                             && !text.contains(" ") && !text.contains("\n")
                 if isURL { fetchArticle(url: text) }
-            case .loading:
-                break   // still fetching — ignore extra taps
             }
+            // .loading → ignore; .ready → onChange fires startArticleSynth automatically
             return
         }
 
